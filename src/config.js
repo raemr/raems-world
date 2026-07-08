@@ -19,7 +19,7 @@ export const config = {
   //   personal .. ambient      -> abstract ambient words, medium opacity
   //   dist > ambient           -> meta easter-egg phrases, low opacity
   voidRadius: 64,
-  personalRadius: 160,
+  personalRadius: 112,
   ambientRadius: 340,
   // How wide (px) the tier opacity blends across a zone boundary. The zones
   // still decide which words go where, but this keeps the boundaries from ever
@@ -35,7 +35,7 @@ export const config = {
   // Cells near the cursor lean outward along a smooth, low-amplitude field so
   // the surrounding words back away from it. Kept small to avoid any obvious
   // curved warping of the lines.
-  displaceRadius: 110, // px of influence
+  displaceRadius: 210, // px of influence
   displaceAmount: 14, // max px a cell is pushed outward
 
   // Dragging the cursor stretches the void along the direction of motion, with
