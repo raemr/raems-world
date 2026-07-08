@@ -19,8 +19,12 @@ export const config = {
   //   personal .. ambient      -> abstract ambient words, medium opacity
   //   dist > ambient           -> meta easter-egg phrases, low opacity
   voidRadius: 64,
-  personalRadius: 112,
-  ambientRadius: 340,
+  personalRadius: 130,
+  // The ambient mass is large and decoupled from the cursor: its centre is a
+  // heavily-lagged anchor (see ambientLerp), so it sits there and drifts slowly
+  // rather than tracking the pointer. Void + personal still hug the cursor.
+  ambientRadius: 320,
+  ambientLerp: 0.005, // how slowly the ambient anchor chases the cursor
   // How wide (px) the tier opacity blends across a zone boundary. The zones
   // still decide which words go where, but this keeps the boundaries from ever
   // reading as visible rings.

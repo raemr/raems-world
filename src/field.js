@@ -94,6 +94,8 @@ export function createField(canvas) {
 
     const px = pointer.x;
     const py = pointer.y;
+    const ax = pointer.ax; // lagged anchor the ambient mass is centred on
+    const ay = pointer.ay;
     const halfW = cssW / 2;
     const halfH = cssH / 2;
     const time = now * config.noiseTimeSpeed;
@@ -129,29 +131,40 @@ export function createField(canvas) {
         const ddy = cyc - py;
         const dist = Math.sqrt(ddx * ddx + ddy * ddy) || 0.0001;
 
-        // The zone picks which vocabulary a cell shows. The character swaps at
-        // the boundaries, but the tier opacity below is blended smoothly across
-        // them, so the zones themselves never read as visible rings.
+        // Distance from the lagged anchor decides the ambient/meta split, so
+        // the big ambient mass sits where it drifts to rather than tracking the
+        // cursor. The void and personal ring stay measured from the cursor.
+        const adx = cxc - ax;
+        const ady = cyc - ay;
+        const distSlow = Math.sqrt(adx * adx + ady * ady);
+
+        // The zone picks which vocabulary a cell shows. Personal hugs the
+        // cursor; ambient vs meta follows the slow anchor. Opacity is blended
+        // smoothly below so no boundary ever reads as a visible ring.
         let ch;
         if (dist < config.personalRadius) ch = personalRow[c];
-        else if (dist < config.ambientRadius) ch = ambientRow[c];
+        else if (distSlow < config.ambientRadius) ch = ambientRow[c];
         else ch = metaRow[c];
         if (ch === 0) continue; // empty cell (was a space)
 
-        const toAmbient = smoothstep(
-          config.personalRadius - config.tierBlend,
-          config.personalRadius + config.tierBlend,
-          dist
-        );
-        const toMeta = smoothstep(
+        // Ambient<->meta base opacity comes from the anchor; the personal ring
+        // is layered on top from the cursor so it is never dimmed by the base.
+        const wPersonal =
+          1 -
+          smoothstep(
+            config.personalRadius - config.tierBlend,
+            config.personalRadius + config.tierBlend,
+            dist
+          );
+        const wMeta = smoothstep(
           config.ambientRadius - config.tierBlend,
           config.ambientRadius + config.tierBlend,
-          dist
+          distSlow
         );
-        let tierAlpha = lerp(config.alphaPersonal, config.alphaAmbient, toAmbient);
-        tierAlpha = lerp(tierAlpha, config.alphaMeta, toMeta);
-        let noiseAmt = lerp(config.noisePersonal, config.noiseAmbient, toAmbient);
-        noiseAmt = lerp(noiseAmt, config.noiseMeta, toMeta);
+        let tierAlpha = lerp(config.alphaAmbient, config.alphaMeta, wMeta);
+        tierAlpha = lerp(tierAlpha, config.alphaPersonal, wPersonal);
+        let noiseAmt = lerp(config.noiseAmbient, config.noiseMeta, wMeta);
+        noiseAmt = lerp(noiseAmt, config.noisePersonal, wPersonal);
 
         // Drop cells inside a wobbling radius. The radius breathes with the
         // flow field, so the empty space is an irregular blob and its outline
