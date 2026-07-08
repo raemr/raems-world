@@ -37,16 +37,11 @@ body {
   pointer-events: none;
   padding: 28px 32px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-end;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 12px;
-}
-
-.wordmark {
-  font-weight: 600;
-  opacity: 0.85;
 }
 
 .hint {

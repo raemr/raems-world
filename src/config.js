@@ -12,6 +12,30 @@ export const config = {
   bg: "#f2ead6",
   ink: "#2b2a27",
 
+  // Canvas wordmark. It is drawn under the typographic field, and its padded
+  // box becomes the alternate void shape while hovered.
+  raemText: "RAEM",
+  raemFontScale: 0.12,
+  raemFontSizeMin: 68,
+  raemFontSizeMax: 156,
+  raemMarginX: 36,
+  raemMarginY: 30,
+  raemPadX: 28,
+  raemPadY: 18,
+  raemRadius: 18,
+  raemAlphaIdle: 0,
+  raemAlphaReveal: 0.72,
+  raemRevealInSpeed: 5.2,
+  raemRevealOutSpeed: 3.4,
+  raemPulseSpeed: 180, // px/s
+  raemPulsePeriod: 3000, // ms between emitted wavefronts
+  raemPulseRestAfterHover: 10000, // ms before pulsing resumes after hover
+  raemPulseWidth: 58, // thickness of the brightened wavefront
+  raemPulseAlpha: 0.34,
+  raemPulseSourceRadius: 120,
+  raemPulseSourceAlpha: 0.22,
+  raemPulseFadeDistance: 760,
+
   // Cursor zones, in CSS pixels, measured from the (smoothed) pointer.
   //   dist < voidRadius        -> cell is dropped; the surrounding words draw
   //                               the (irregular) outline of the empty space
