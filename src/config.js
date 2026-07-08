@@ -21,6 +21,9 @@ export const config = {
       bg: "#eef1e8",
       ink: "#222820",
       raemPulseInk: "#426f82",
+      // Deep, high-contrast ink RAEM eases into while hovered, so the revealed
+      // word reads as fully present instead of a faint tint under the sea.
+      raemRevealInk: "#173a45",
       wordmarkShadowColor: "rgba(255, 255, 255, 0.82)",
       wordmarkRaemShadowColor: "rgba(255, 255, 255, 0.94)",
       toggleBg: "rgba(238, 241, 232, 0.62)",
@@ -32,6 +35,8 @@ export const config = {
       bg: "#101615",
       ink: "#e9ecdf",
       raemPulseInk: "#90bbc8",
+      // Brighter counterpart of raemRevealInk for dark mode.
+      raemRevealInk: "#cdeef5",
       wordmarkShadowColor: "rgba(144, 187, 200, 0.18)",
       wordmarkRaemShadowColor: "rgba(144, 187, 200, 0.34)",
       toggleBg: "rgba(16, 22, 21, 0.68)",

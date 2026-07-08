@@ -10,6 +10,13 @@ const theme = createThemeController();
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// The "move your cursor" hint has served its purpose the moment the cursor
+// (or a touch) moves, so fade it out on the first interaction.
+const hint = document.querySelector(".hint");
+const dismissHint = () => hint && hint.classList.add("hint--dismissed");
+window.addEventListener("pointermove", dismissHint, { once: true });
+window.addEventListener("pointerdown", dismissHint, { once: true });
+
 function updateThemeToggleLabel() {
   const nextMode = theme.mode === "dark" ? "light" : "dark";
   themeToggle.setAttribute("aria-label", `Switch to ${nextMode} mode`);

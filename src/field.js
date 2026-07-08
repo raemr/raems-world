@@ -65,11 +65,15 @@ export function createField(canvas) {
     ctx.shadowOffsetY = config.wordmarkShadowOffsetY;
   }
 
-  function applyRaemShadow(palette) {
+  function applyRaemShadow(palette, revealMix = 0) {
+    // The white halo lifts RAEM off the dense sea while it is hidden. Once the
+    // hover clears a rounded rect around the word the halo only bleaches it, so
+    // fade the halo out as the reveal comes in.
+    const soften = 1 - revealMix;
     ctx.shadowColor = palette.wordmarkRaemShadowColor;
-    ctx.shadowBlur = config.wordmarkRaemShadowBlur;
+    ctx.shadowBlur = config.wordmarkRaemShadowBlur * soften;
     ctx.shadowOffsetX = config.wordmarkRaemShadowOffsetX;
-    ctx.shadowOffsetY = config.wordmarkRaemShadowOffsetY;
+    ctx.shadowOffsetY = config.wordmarkRaemShadowOffsetY * soften;
   }
 
   function clearShadow() {
@@ -269,13 +273,14 @@ export function createField(canvas) {
     ctx.globalAlpha = leadAlpha * state.intro;
     ctx.fillText(config.wordmarkIntroText, wordmark.introX, wordmark.textY);
 
-    applyRaemShadow(palette);
-    drawRaemStyle("normal", romanMix);
-    drawRaemStyle("italic", italicMix);
+    const revealMix = smoothstep(0, 1, reveal);
+    applyRaemShadow(palette, revealMix);
+    drawRaemStyle("normal", romanMix, revealMix);
+    drawRaemStyle("italic", italicMix, revealMix);
     ctx.globalAlpha = 1;
     clearShadow();
 
-    function drawRaemStyle(style, alphaMix) {
+    function drawRaemStyle(style, alphaMix, revealMix) {
       if (alphaMix <= 0.001) return;
 
       ctx.font = wordmarkFont(config.wordmarkFontFamily, style, raemFontSize * config.wordmarkRaemScale);
@@ -285,6 +290,14 @@ export function createField(canvas) {
       ctx.fillStyle = palette.raemPulseInk;
       ctx.globalAlpha = raemAlpha * state.intro * state.blue * alphaMix;
       ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+
+      // On hover, deepen RAEM toward a high-contrast ink so the revealed word
+      // reads as fully present in the cleared rounded rect around it.
+      if (revealMix > 0.001) {
+        ctx.fillStyle = palette.raemRevealInk;
+        ctx.globalAlpha = raemAlpha * state.intro * alphaMix * revealMix;
+        ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+      }
     }
   }
 
