@@ -13,7 +13,8 @@ export const config = {
   ink: "#2b2a27",
 
   // Cursor zones, in CSS pixels, measured from the (smoothed) pointer.
-  //   dist < voidRadius        -> empty, the field is pushed away
+  //   dist < voidRadius        -> cell is dropped; the surrounding words draw
+  //                               the (irregular) outline of the empty space
   //   voidRadius .. personal   -> "about you" words, high opacity
   //   personal .. ambient      -> abstract ambient words, medium opacity
   //   dist > ambient           -> meta easter-egg phrases, low opacity
@@ -25,11 +26,17 @@ export const config = {
   // reading as visible rings.
   tierBlend: 72,
 
-  // Repulsion. Cells near the cursor are nudged outward by a smooth, low
-  // amplitude field. Neighboring cells get near-identical vectors, so the text
-  // keeps its spacing and flows around the cursor instead of piling up.
-  displaceRadius: 230, // px of influence
-  displaceAmount: 26, // max px a cell is pushed outward
+  // The void is never a drawn circle. Its radius wobbles with the flow field,
+  // so the empty space is an irregular blob whose edge is defined only by which
+  // words fall outside it - form from text, not a polygon.
+  voidWobble: 26, // +/- px the void radius breathes with the noise
+  voidWobbleFreq: 0.008, // spatial frequency of that wobble
+
+  // Cells near the cursor lean outward along a smooth, low-amplitude field so
+  // the surrounding words back away from it. Kept small to avoid any obvious
+  // curved warping of the lines.
+  displaceRadius: 210, // px of influence
+  displaceAmount: 14, // max px a cell is pushed outward
 
   // Flow field that drives the soft organic shapes.
   noiseSpaceFreq: 0.021,
@@ -45,8 +52,8 @@ export const config = {
 
   // Edge fade. Fraction of the half-dimension where the vignette runs from
   // full (start) to gone (end).
-  vignetteStart: 0.66,
-  vignetteEnd: 1.02,
+  vignetteStart: 0.86,
+  vignetteEnd: 1.05,
 
   // Pointer smoothing and idle behaviour.
   pointerLerp: 0.12,

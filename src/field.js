@@ -145,16 +145,21 @@ export function createField(canvas) {
         let noiseAmt = lerp(config.noisePersonal, config.noiseAmbient, toAmbient);
         noiseAmt = lerp(noiseAmt, config.noiseMeta, toMeta);
 
-        // Hollow out the void right under the cursor (opacity only).
-        const voidFade = smoothstep(config.voidRadius * 0.4, config.voidRadius, dist);
+        // Drop cells inside a wobbling radius. The radius breathes with the
+        // flow field, so the empty space is an irregular blob and its outline
+        // is whatever words happen to sit just outside it - not a drawn circle.
+        const wobble =
+          (fieldNoise(cxc * config.voidWobbleFreq, cyc * config.voidWobbleFreq, time) - 0.5) *
+          2 *
+          config.voidWobble;
+        if (dist < config.voidRadius + wobble) continue;
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
-        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt) * voidFade;
+        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
         if (alpha < 0.015) continue;
 
-        // Nudge the cell outward along a smooth, low-amplitude field. Because
-        // the displacement varies gently with position, neighboring cells move
-        // together and the text keeps its spacing as it flows around the cursor.
+        // Lean the cell outward along a smooth, low-amplitude field so the
+        // words back away from the cursor. Kept gentle to avoid obvious curves.
         let dx = cx;
         let dy = cy;
         const influence = smoothstep(config.displaceRadius, 0, dist);
