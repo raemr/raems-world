@@ -2,11 +2,9 @@
 export const config = {
   // Typography
   // The generative word field stays monospace so the grid measures cleanly.
-  fontFamily:
-    'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
-  // The intro wordmark can use a softer display face without disturbing grid metrics.
-  wordmarkFontFamily:
-    '"Mirava Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  fontFamily: '"IBM Plex Mono", "SF Mono", SFMono-Regular, Menlo, Consolas, monospace',
+  // The intro wordmark gets a warmer display face than the gridded sea.
+  wordmarkFontFamily: '"Fraunces", Georgia, serif',
   // Smallest sea-text size, in CSS pixels.
   fontSizeMin: 12,
   // Largest sea-text size, in CSS pixels.
@@ -20,26 +18,26 @@ export const config = {
   // Canvas and CSS colors by mode. The theme controller interpolates these.
   palettes: {
     light: {
-      bg: "#f2ead6",
-      ink: "#2b2a27",
-      raemPulseInk: "#5B7C99",
-      wordmarkShadowColor: "rgba(255, 255, 255, 0.78)",
-      wordmarkRaemShadowColor: "rgba(255, 255, 255, 0.9)",
-      toggleBg: "rgba(242, 234, 214, 0.58)",
-      toggleBorder: "rgba(43, 42, 39, 0.24)",
-      toggleInk: "#2b2a27",
-      toggleShadow: "rgba(43, 42, 39, 0.16)",
+      bg: "#eef1e8",
+      ink: "#222820",
+      raemPulseInk: "#426f82",
+      wordmarkShadowColor: "rgba(255, 255, 255, 0.82)",
+      wordmarkRaemShadowColor: "rgba(255, 255, 255, 0.94)",
+      toggleBg: "rgba(238, 241, 232, 0.62)",
+      toggleBorder: "rgba(34, 40, 32, 0.22)",
+      toggleInk: "#222820",
+      toggleShadow: "rgba(47, 64, 54, 0.16)",
     },
     dark: {
-      bg: "#151411",
-      ink: "#eee7d7",
-      raemPulseInk: "#8fb4cf",
-      wordmarkShadowColor: "rgba(255, 255, 255, 0.16)",
-      wordmarkRaemShadowColor: "rgba(255, 255, 255, 0.28)",
-      toggleBg: "rgba(21, 20, 17, 0.62)",
-      toggleBorder: "rgba(238, 231, 215, 0.28)",
-      toggleInk: "#eee7d7",
-      toggleShadow: "rgba(0, 0, 0, 0.34)",
+      bg: "#101615",
+      ink: "#e9ecdf",
+      raemPulseInk: "#90bbc8",
+      wordmarkShadowColor: "rgba(144, 187, 200, 0.18)",
+      wordmarkRaemShadowColor: "rgba(144, 187, 200, 0.34)",
+      toggleBg: "rgba(16, 22, 21, 0.68)",
+      toggleBorder: "rgba(233, 236, 223, 0.24)",
+      toggleInk: "#e9ecdf",
+      toggleShadow: "rgba(0, 0, 0, 0.38)",
     },
   },
 
