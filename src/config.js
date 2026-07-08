@@ -3,6 +3,8 @@ export const config = {
   // Typography
   fontFamily:
     'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+  wordmarkFontFamily:
+    '"Mirava Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   fontSizeMin: 12,
   fontSizeMax: 16,
   lineHeightRatio: 1.16, // cell height = fontSize * this
@@ -12,10 +14,23 @@ export const config = {
   bg: "#f2ead6",
   ink: "#2b2a27",
 
-  // Canvas wordmark. It is drawn under the typographic field, and its padded
-  // box becomes the alternate void shape while hovered.
+  // Canvas wordmark. It is drawn under the typographic field, and RAEM's
+  // padded box becomes the alternate void shape while hovered.
+  wordmarkLeadText: "HI",
+  wordmarkIntroText: "I'M",
+  wordmarkLeadMarginX: 36,
+  wordmarkLeadMarginY: 32,
+  wordmarkShadowColor: "rgba(255, 255, 255, 0.78)",
+  wordmarkShadowBlur: 12,
+  wordmarkShadowOffsetX: 0,
+  wordmarkShadowOffsetY: 4,
+  wordmarkRaemShadowColor: "rgba(255, 255, 255, 0.9)",
+  wordmarkRaemShadowBlur: 22,
+  wordmarkRaemShadowOffsetX: 0,
+  wordmarkRaemShadowOffsetY: 7,
   raemText: "RAEM",
-  raemFontScale: 0.12,
+  raemFontScale: 0.135,
+  wordmarkRaemScale: 1.1,
   raemFontSizeMin: 68,
   raemFontSizeMax: 156,
   raemMarginX: 36,
@@ -24,21 +39,32 @@ export const config = {
   raemPadY: 18,
   raemRadius: 18,
   raemAlphaIdle: 0,
-  raemAlphaReveal: 0.72,
+  raemAlphaReveal: 0.89,
+  wordmarkRaemAlphaReveal: 1,
   raemRevealInSpeed: 5.2,
   raemRevealOutSpeed: 3.4,
-  raemPulseInk: "#6f8490",
+  raemPulseInk: "#5B7C99",
+  wordmarkGap: 0.28, // em
+  wordmarkHiFadeMs: 420,
+  wordmarkHiHoldMs: 620,
+  wordmarkIntroFadeMs: 900,
+  wordmarkBlueDelayMs: 900,
+  wordmarkBlueFadeMs: 760,
   raemPulseSpeed: 180, // px/s
   raemPulsePeriod: 4000, // ms between emitted wavefronts
-  raemPulseRestAfterHover: 10000, // ms before pulsing resumes after hover
-  raemPulseWidth: 64, // thickness of the brightened wavefront
-  raemPulseAlpha: 0.42,
+  raemPulseWidth: 84, // thickness of the brightened wavefront
+  raemPulseAlpha: 1,
   raemPulseSourceRadius: 120,
   raemPulseSourceAlpha: 0.24,
   raemPulseFadeDistance: 860,
   raemPulseWobble: 38,
   raemPulseWobbleFreq: 0.007,
   raemPulseWobbleSpeed: 0.00022,
+  seaClearSpeed: 720, // px/s
+  seaClearSoftness: 170,
+  seaClearWobble: 52,
+  seaClearWobbleFreq: 0.006,
+  seaClearWobbleSpeed: 0.00034,
 
   // Cursor zones, in CSS pixels, measured from the (smoothed) pointer.
   //   dist < voidRadius        -> cell is dropped; the surrounding words draw
@@ -52,6 +78,7 @@ export const config = {
   // heavily-lagged anchor (see ambientLerp), so it sits there and drifts slowly
   // rather than tracking the pointer. Void + personal still hug the cursor.
   ambientRadius: 320,
+  ambientFollowDelay: 2000, // ms before the ambient anchor starts chasing pointer movement
   ambientLerp: 0.005, // how slowly the ambient anchor chases the cursor
   // The ambient edge is fluid: it breathes with the flow field and surges with
   // the cursor's velocity, like a big slow body of liquid.

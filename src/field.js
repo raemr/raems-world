@@ -17,14 +17,33 @@ export function createField(canvas) {
   let fontSize = 14;
   let raemFontSize = 96;
   let raemBox = null;
+  let wordmark = null;
   let reveal = 0;
   let lastNow = 0;
+  let introStart = 0;
   let hoveringRaem = false;
-  let pulseRestUntil = 0;
+  let seaClearStart = null;
+  let seaClearOrigin = { x: 0, y: 0 };
+  let seaClearComplete = false;
 
   let grids = null;
   const buckets = []; // reused each frame; buckets[i] = [x, y, char, x, y, char, ...]
   const pulseBuckets = [];
+
+  canvas.addEventListener("pointerdown", (e) => {
+    if (seaClearStart !== null) return;
+    if (!isInsideRaemBox(e.clientX, e.clientY)) return;
+
+    const state = wordmarkState(performance.now());
+    if (state.blue < 0.96) return;
+
+    seaClearStart = performance.now();
+    seaClearComplete = false;
+    seaClearOrigin = {
+      x: raemBox.x + raemBox.w * 0.5,
+      y: raemBox.y + raemBox.h * 0.5,
+    };
+  });
 
   function pickFontSize(w) {
     return Math.round(clamp(w / 115, config.fontSizeMin, config.fontSizeMax));
@@ -34,17 +53,70 @@ export function createField(canvas) {
     return Math.round(clamp(w * config.raemFontScale, config.raemFontSizeMin, config.raemFontSizeMax));
   }
 
+  function wordmarkFont(family, style = "normal", size = raemFontSize) {
+    return `${style} 700 ${size}px ${family}`;
+  }
+
+  function applyWordmarkShadow() {
+    ctx.shadowColor = config.wordmarkShadowColor;
+    ctx.shadowBlur = config.wordmarkShadowBlur;
+    ctx.shadowOffsetX = config.wordmarkShadowOffsetX;
+    ctx.shadowOffsetY = config.wordmarkShadowOffsetY;
+  }
+
+  function applyRaemShadow() {
+    ctx.shadowColor = config.wordmarkRaemShadowColor;
+    ctx.shadowBlur = config.wordmarkRaemShadowBlur;
+    ctx.shadowOffsetX = config.wordmarkRaemShadowOffsetX;
+    ctx.shadowOffsetY = config.wordmarkRaemShadowOffsetY;
+  }
+
+  function clearShadow() {
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  }
+
   function updateRaemLayout() {
-    raemFontSize = pickRaemFontSize(cssW);
-    ctx.font = `700 ${raemFontSize}px ${config.fontFamily}`;
+    const pickedSize = pickRaemFontSize(cssW);
+    const maxWidth = Math.max(160, cssW - config.raemMarginX * 2);
+    const minSize = Math.min(config.raemFontSizeMin, 38);
+
+    raemFontSize = pickedSize;
+    const pickedRaemFontSize = pickedSize * config.wordmarkRaemScale;
+    ctx.font = wordmarkFont(config.wordmarkFontFamily);
+    const pickedGap = pickedSize * config.wordmarkGap;
+    const pickedIntroWidth = ctx.measureText(config.wordmarkIntroText).width;
+    ctx.font = wordmarkFont(config.wordmarkFontFamily, "normal", pickedRaemFontSize);
+    const pickedWidth = pickedIntroWidth + pickedGap + ctx.measureText(config.raemText).width;
+
+    raemFontSize = Math.round(clamp(pickedSize * Math.min(1, maxWidth / pickedWidth), minSize, pickedSize));
+    const scaledRaemFontSize = raemFontSize * config.wordmarkRaemScale;
     ctx.textBaseline = "alphabetic";
 
-    const metrics = ctx.measureText(config.raemText);
-    const width = metrics.width;
-    const ascent = metrics.actualBoundingBoxAscent || raemFontSize * 0.74;
-    const descent = metrics.actualBoundingBoxDescent || raemFontSize * 0.18;
+    ctx.font = wordmarkFont(config.wordmarkFontFamily);
+    const hiMetrics = ctx.measureText(config.wordmarkLeadText);
+    const introMetrics = ctx.measureText(config.wordmarkIntroText);
+    ctx.font = wordmarkFont(config.wordmarkFontFamily, "normal", scaledRaemFontSize);
+    const raemMetrics = ctx.measureText(config.raemText);
+    const gap = raemFontSize * config.wordmarkGap;
+    const width = raemMetrics.width;
+    const ascent = Math.max(
+      hiMetrics.actualBoundingBoxAscent || raemFontSize * 0.74,
+      introMetrics.actualBoundingBoxAscent || raemFontSize * 0.74,
+      raemMetrics.actualBoundingBoxAscent || raemFontSize * 0.74
+    );
+    const descent = Math.max(
+      hiMetrics.actualBoundingBoxDescent || raemFontSize * 0.18,
+      introMetrics.actualBoundingBoxDescent || raemFontSize * 0.18,
+      raemMetrics.actualBoundingBoxDescent || raemFontSize * 0.18
+    );
     const textX = cssW - config.raemMarginX - width;
     const textY = cssH - config.raemMarginY - descent;
+    const introX = textX - gap - introMetrics.width;
+    const hiX = config.wordmarkLeadMarginX;
+    const hiY = config.wordmarkLeadMarginY + ascent;
 
     raemBox = {
       textX,
@@ -53,6 +125,13 @@ export function createField(canvas) {
       y: textY - ascent - config.raemPadY,
       w: width + config.raemPadX * 2,
       h: ascent + descent + config.raemPadY * 2,
+    };
+    wordmark = {
+      hiX,
+      hiY,
+      introX,
+      raemX: textX,
+      textY,
     };
   }
 
@@ -71,15 +150,10 @@ export function createField(canvas) {
     lastNow = now;
 
     hoveringRaem = isInsideRaemBox(pointer.rawX, pointer.rawY);
-    const target = hoveringRaem ? 1 : 0;
+    canvas.style.cursor = hoveringRaem && wordmarkState(now).blue >= 0.96 && seaClearStart === null ? "pointer" : "";
+    const target = hoveringRaem && seaClearStart === null ? 1 : 0;
     const speed = target > reveal ? config.raemRevealInSpeed : config.raemRevealOutSpeed;
     reveal += (target - reveal) * (1 - Math.exp(-speed * dt));
-  }
-
-  function updatePulseRest(now) {
-    if (hoveringRaem) {
-      pulseRestUntil = now + config.raemPulseRestAfterHover;
-    }
   }
 
   function pulseBoost(x, y, now, active) {
@@ -114,6 +188,54 @@ export function createField(canvas) {
     return fade * radialFade * (wave * config.raemPulseAlpha + source * config.raemPulseSourceAlpha);
   }
 
+  function wordmarkState(now) {
+    if (!introStart) introStart = now;
+
+    const elapsed = now - introStart;
+    const hi = smoothstep(0, config.wordmarkHiFadeMs, elapsed);
+    const introAt = config.wordmarkHiFadeMs + config.wordmarkHiHoldMs;
+    const intro = smoothstep(introAt, introAt + config.wordmarkIntroFadeMs, elapsed);
+    const blueAt = introAt + config.wordmarkIntroFadeMs + config.wordmarkBlueDelayMs;
+    const blue = smoothstep(blueAt, blueAt + config.wordmarkBlueFadeMs, elapsed);
+
+    return { hi, intro, blue };
+  }
+
+  function seaClearAmount(x, y, now) {
+    if (seaClearStart === null) return 0;
+
+    const age = Math.max(0, now - seaClearStart);
+    const radius = (age / 1000) * config.seaClearSpeed;
+    const wobble =
+      (fieldNoise(
+        x * config.seaClearWobbleFreq,
+        y * config.seaClearWobbleFreq,
+        now * config.seaClearWobbleSpeed
+      ) -
+        0.5) *
+      2 *
+      config.seaClearWobble;
+    const dx = x - seaClearOrigin.x;
+    const dy = y - seaClearOrigin.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    return 1 - smoothstep(radius - config.seaClearSoftness, radius + config.seaClearSoftness, dist + wobble);
+  }
+
+  function updateSeaClear(now) {
+    if (seaClearStart === null || seaClearComplete) return;
+
+    const radius = ((now - seaClearStart) / 1000) * config.seaClearSpeed;
+    const farthest = Math.max(
+      Math.hypot(seaClearOrigin.x, seaClearOrigin.y),
+      Math.hypot(cssW - seaClearOrigin.x, seaClearOrigin.y),
+      Math.hypot(seaClearOrigin.x, cssH - seaClearOrigin.y),
+      Math.hypot(cssW - seaClearOrigin.x, cssH - seaClearOrigin.y)
+    );
+
+    seaClearComplete = radius > farthest + config.seaClearSoftness + config.seaClearWobble;
+  }
+
   function roundedRectSdf(x, y, box, radius) {
     const halfW = box.w * 0.5;
     const halfH = box.h * 0.5;
@@ -124,15 +246,35 @@ export function createField(canvas) {
     return Math.sqrt(outsideX * outsideX + outsideY * outsideY) + Math.min(Math.max(dx, dy), 0) - radius;
   }
 
-  function drawRaem() {
-    if (!raemBox) return;
+  function drawWordmark(now) {
+    if (!raemBox || !wordmark) return;
 
-    ctx.font = `700 ${raemFontSize}px ${config.fontFamily}`;
+    const state = wordmarkState(now);
+    const leadAlpha = config.raemAlphaReveal;
+    const raemAlpha = config.wordmarkRaemAlphaReveal;
     ctx.textBaseline = "alphabetic";
+    applyWordmarkShadow();
+
+    ctx.font = wordmarkFont(config.wordmarkFontFamily);
     ctx.fillStyle = config.ink;
-    ctx.globalAlpha = lerp(config.raemAlphaIdle, config.raemAlphaReveal, reveal);
-    ctx.fillText(config.raemText, raemBox.textX, raemBox.textY);
+    ctx.globalAlpha = leadAlpha * state.hi;
+    ctx.fillText(config.wordmarkLeadText, wordmark.hiX, wordmark.hiY);
+    ctx.globalAlpha = leadAlpha * state.intro;
+    ctx.fillText(config.wordmarkIntroText, wordmark.introX, wordmark.textY);
+
+    applyRaemShadow();
+    ctx.font = wordmarkFont(
+      config.wordmarkFontFamily,
+      hoveringRaem && seaClearStart === null ? "italic" : "normal",
+      raemFontSize * config.wordmarkRaemScale
+    );
+    ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue);
+    ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+    ctx.fillStyle = config.raemPulseInk;
+    ctx.globalAlpha = raemAlpha * state.intro * state.blue;
+    ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
     ctx.globalAlpha = 1;
+    clearShadow();
   }
 
   // Build one row by concatenating entries (words or whole phrases) until the
@@ -197,9 +339,12 @@ export function createField(canvas) {
     ctx.fillRect(0, 0, cssW, cssH);
 
     updateReveal(now, pointer);
-    updatePulseRest(now);
-    const pulseActive = now >= pulseRestUntil && !hoveringRaem && reveal < 0.02;
-    drawRaem();
+    updateSeaClear(now);
+    const pulseActive = seaClearStart === null && wordmarkState(now).blue >= 0.96;
+    if (seaClearComplete) {
+      drawWordmark(now);
+      return;
+    }
 
     ctx.font = `${fontSize}px ${config.fontFamily}`;
     ctx.textBaseline = "top";
@@ -337,9 +482,13 @@ export function createField(canvas) {
         const voidSdf = lerp(cursorSdf, raemSdf, smoothstep(0, 1, reveal));
         if (voidSdf < 0) continue;
 
+        const clear = seaClearAmount(cxc, cyc, now);
+        if (clear >= 0.985) continue;
+
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
-        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
-        const pulse = pulseBoost(cxc, cyc, now, pulseActive);
+        const clearFade = 1 - clear;
+        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt) * clearFade;
+        const pulse = pulseBoost(cxc, cyc, now, pulseActive) * clearFade;
         if (alpha < 0.015 && pulse < 0.015) continue;
 
         // Lean the cell outward along a smooth, low-amplitude field so the
@@ -384,6 +533,7 @@ export function createField(canvas) {
       }
     }
     ctx.globalAlpha = 1;
+    drawWordmark(now);
   }
 
   return { rebuild, render };

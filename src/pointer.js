@@ -13,6 +13,7 @@ export function createPointer(width, height) {
     speed: 0,
     ax: width / 2, // heavily-lagged anchor for the big ambient mass
     ay: height / 2,
+    ambientHistory: [],
     lastMove: -Infinity,
     inside: false,
   };
@@ -70,9 +71,28 @@ export function updatePointer(p, now, width, height) {
   p.vy += (p.y - prevY - p.vy) * config.velocitySmoothing;
   p.speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
 
-  // The ambient mass is its own thing: a big region that follows the cursor
-  // far more slowly, so it lags behind and drifts at a low velocity rather
-  // than being pinned to the pointer.
-  p.ax += (p.x - p.ax) * config.ambientLerp;
-  p.ay += (p.y - p.ay) * config.ambientLerp;
+  p.ambientHistory.push({ t: now, x: p.x, y: p.y });
+  const followAt = now - config.ambientFollowDelay;
+  while (p.ambientHistory.length > 2 && p.ambientHistory[1].t <= followAt) {
+    p.ambientHistory.shift();
+  }
+
+  let targetAx = p.ax;
+  let targetAy = p.ay;
+  const first = p.ambientHistory[0];
+  const second = p.ambientHistory[1];
+  if (second && first.t <= followAt) {
+    const span = second.t - first.t || 1;
+    const t = (followAt - first.t) / span;
+    targetAx = first.x + (second.x - first.x) * t;
+    targetAy = first.y + (second.y - first.y) * t;
+  } else if (first && first.t <= followAt) {
+    targetAx = first.x;
+    targetAy = first.y;
+  }
+
+  // The ambient mass is its own thing: a big region that follows a delayed
+  // cursor sample, then eases toward it, so it has both a time lag and drift.
+  p.ax += (targetAx - p.ax) * config.ambientLerp;
+  p.ay += (targetAy - p.ay) * config.ambientLerp;
 }
