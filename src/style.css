@@ -43,10 +43,13 @@ body {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  padding: 28px 32px;
+  /* Top-centre keeps the hint clear of the canvas wordmark, which owns the
+     top-left (HI) and bottom (I'M RAEM) - the latter fills the width on
+     narrow viewports, where a bottom-left hint used to collide with it. */
+  padding: 30px 32px;
   display: flex;
-  justify-content: flex-start;
-  align-items: flex-end;
+  justify-content: center;
+  align-items: flex-start;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 12px;
@@ -55,6 +58,13 @@ body {
 .hint {
   opacity: 0.4;
   animation: breathe 4s ease-in-out infinite;
+  transition: opacity 600ms ease;
+}
+
+/* Its job is done once the cursor moves; fade it away so it never lingers. */
+.hint--dismissed {
+  opacity: 0;
+  animation: none;
 }
 
 .theme-toggle {
