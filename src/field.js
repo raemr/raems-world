@@ -19,6 +19,7 @@ export function createField(canvas) {
   let raemBox = null;
   let wordmark = null;
   let reveal = 0;
+  let italicReveal = 0;
   let lastNow = 0;
   let introStart = 0;
   let hoveringRaem = false;
@@ -57,15 +58,15 @@ export function createField(canvas) {
     return `${style} 700 ${size}px ${family}`;
   }
 
-  function applyWordmarkShadow() {
-    ctx.shadowColor = config.wordmarkShadowColor;
+  function applyWordmarkShadow(palette) {
+    ctx.shadowColor = palette.wordmarkShadowColor;
     ctx.shadowBlur = config.wordmarkShadowBlur;
     ctx.shadowOffsetX = config.wordmarkShadowOffsetX;
     ctx.shadowOffsetY = config.wordmarkShadowOffsetY;
   }
 
-  function applyRaemShadow() {
-    ctx.shadowColor = config.wordmarkRaemShadowColor;
+  function applyRaemShadow(palette) {
+    ctx.shadowColor = palette.wordmarkRaemShadowColor;
     ctx.shadowBlur = config.wordmarkRaemShadowBlur;
     ctx.shadowOffsetX = config.wordmarkRaemShadowOffsetX;
     ctx.shadowOffsetY = config.wordmarkRaemShadowOffsetY;
@@ -154,6 +155,10 @@ export function createField(canvas) {
     const target = hoveringRaem && seaClearStart === null ? 1 : 0;
     const speed = target > reveal ? config.raemRevealInSpeed : config.raemRevealOutSpeed;
     reveal += (target - reveal) * (1 - Math.exp(-speed * dt));
+
+    const italicSpeed =
+      target > italicReveal ? config.wordmarkItalicInSpeed : config.wordmarkItalicOutSpeed;
+    italicReveal += (target - italicReveal) * (1 - Math.exp(-italicSpeed * dt));
   }
 
   function pulseBoost(x, y, now, active) {
@@ -246,35 +251,41 @@ export function createField(canvas) {
     return Math.sqrt(outsideX * outsideX + outsideY * outsideY) + Math.min(Math.max(dx, dy), 0) - radius;
   }
 
-  function drawWordmark(now) {
+  function drawWordmark(now, palette) {
     if (!raemBox || !wordmark) return;
 
     const state = wordmarkState(now);
     const leadAlpha = config.raemAlphaReveal;
     const raemAlpha = config.wordmarkRaemAlphaReveal;
+    const italicMix = smoothstep(0, 1, italicReveal);
+    const romanMix = 1 - italicMix;
     ctx.textBaseline = "alphabetic";
-    applyWordmarkShadow();
+    applyWordmarkShadow(palette);
 
     ctx.font = wordmarkFont(config.wordmarkFontFamily);
-    ctx.fillStyle = config.ink;
+    ctx.fillStyle = palette.ink;
     ctx.globalAlpha = leadAlpha * state.hi;
     ctx.fillText(config.wordmarkLeadText, wordmark.hiX, wordmark.hiY);
     ctx.globalAlpha = leadAlpha * state.intro;
     ctx.fillText(config.wordmarkIntroText, wordmark.introX, wordmark.textY);
 
-    applyRaemShadow();
-    ctx.font = wordmarkFont(
-      config.wordmarkFontFamily,
-      hoveringRaem && seaClearStart === null ? "italic" : "normal",
-      raemFontSize * config.wordmarkRaemScale
-    );
-    ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue);
-    ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
-    ctx.fillStyle = config.raemPulseInk;
-    ctx.globalAlpha = raemAlpha * state.intro * state.blue;
-    ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+    applyRaemShadow(palette);
+    drawRaemStyle("normal", romanMix);
+    drawRaemStyle("italic", italicMix);
     ctx.globalAlpha = 1;
     clearShadow();
+
+    function drawRaemStyle(style, alphaMix) {
+      if (alphaMix <= 0.001) return;
+
+      ctx.font = wordmarkFont(config.wordmarkFontFamily, style, raemFontSize * config.wordmarkRaemScale);
+      ctx.fillStyle = palette.ink;
+      ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue) * alphaMix;
+      ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+      ctx.fillStyle = palette.raemPulseInk;
+      ctx.globalAlpha = raemAlpha * state.intro * state.blue * alphaMix;
+      ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+    }
   }
 
   // Build one row by concatenating entries (words or whole phrases) until the
@@ -333,22 +344,22 @@ export function createField(canvas) {
     updateRaemLayout();
   }
 
-  function render(now, pointer) {
+  function render(now, pointer, palette = config.palettes.light) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = config.bg;
+    ctx.fillStyle = palette.bg;
     ctx.fillRect(0, 0, cssW, cssH);
 
     updateReveal(now, pointer);
     updateSeaClear(now);
     const pulseActive = seaClearStart === null && wordmarkState(now).blue >= 0.96;
     if (seaClearComplete) {
-      drawWordmark(now);
+      drawWordmark(now, palette);
       return;
     }
 
     ctx.font = `${fontSize}px ${config.fontFamily}`;
     ctx.textBaseline = "top";
-    ctx.fillStyle = config.ink;
+    ctx.fillStyle = palette.ink;
 
     const nb = config.alphaBuckets;
     for (let i = 0; i <= nb; i++) {
@@ -523,7 +534,7 @@ export function createField(canvas) {
         ctx.fillText(b[k + 2], b[k], b[k + 1]);
       }
     }
-    ctx.fillStyle = config.raemPulseInk;
+    ctx.fillStyle = palette.raemPulseInk;
     for (let i = 1; i <= nb; i++) {
       const b = pulseBuckets[i];
       if (b.length === 0) continue;
@@ -533,7 +544,7 @@ export function createField(canvas) {
       }
     }
     ctx.globalAlpha = 1;
-    drawWordmark(now);
+    drawWordmark(now, palette);
   }
 
   return { rebuild, render };

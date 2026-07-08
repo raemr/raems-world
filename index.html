@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>field</title>
     <meta name="description" content="A generative typographic field." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,700&family=IBM+Plex+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -15,6 +21,16 @@
     <main id="content">
       <span class="hint">move your cursor</span>
     </main>
+
+    <button
+      id="theme-toggle"
+      class="theme-toggle"
+      type="button"
+      aria-label="Switch to dark mode"
+      title="Toggle dark mode"
+    >
+      <span class="theme-toggle__icon" aria-hidden="true"></span>
+    </button>
 
     <script type="module" src="/src/main.js"></script>
   </body>
