@@ -19,8 +19,19 @@ export const config = {
   //   personal .. ambient      -> abstract ambient words, medium opacity
   //   dist > ambient           -> meta easter-egg phrases, low opacity
   voidRadius: 64,
-  personalRadius: 160,
-  ambientRadius: 340,
+  personalRadius: 130,
+  // The ambient mass is large and decoupled from the cursor: its centre is a
+  // heavily-lagged anchor (see ambientLerp), so it sits there and drifts slowly
+  // rather than tracking the pointer. Void + personal still hug the cursor.
+  ambientRadius: 320,
+  ambientLerp: 0.005, // how slowly the ambient anchor chases the cursor
+  // The ambient edge is fluid: it breathes with the flow field and surges with
+  // the cursor's velocity, like a big slow body of liquid.
+  ambientWobble: 60, // +/- px the ambient edge breathes with the noise
+  ambientWobbleFreq: 0.004, // low frequency -> large, soft lobes
+  ambientStretchK: 0.005, // how much speed elongates the ambient mass
+  ambientStretchMax: 2.2, // cap on that elongation
+  ambientTailBias: 1.6, // extra stretch in the wake behind the motion
   // How wide (px) the tier opacity blends across a zone boundary. The zones
   // still decide which words go where, but this keeps the boundaries from ever
   // reading as visible rings.
@@ -37,6 +48,14 @@ export const config = {
   // curved warping of the lines.
   displaceRadius: 210, // px of influence
   displaceAmount: 14, // max px a cell is pushed outward
+
+  // Dragging the cursor stretches the void along the direction of motion, with
+  // a longer wake trailing behind, so it reads like a shape moving through
+  // fluid rather than a rigid circle.
+  voidStretchK: 0.028, // how much speed (px/frame) elongates the void
+  voidStretchMax: 1.5, // cap on that elongation
+  voidTailBias: 1.5, // extra stretch behind the cursor vs. in front
+  velocitySmoothing: 0.16, // how quickly tracked velocity eases in/out
 
   // Flow field that drives the soft organic shapes.
   noiseSpaceFreq: 0.021,

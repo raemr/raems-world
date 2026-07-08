@@ -94,9 +94,22 @@ export function createField(canvas) {
 
     const px = pointer.x;
     const py = pointer.y;
+    const ax = pointer.ax; // lagged anchor the ambient mass is centred on
+    const ay = pointer.ay;
     const halfW = cssW / 2;
     const halfH = cssH / 2;
     const time = now * config.noiseTimeSpeed;
+
+    // Velocity of the cursor sets up an anisotropic warp of the void: it gets
+    // longer along the direction of travel (and longer still in the wake).
+    const speed = pointer.speed;
+    const moving = speed > 0.05;
+    const ux = moving ? pointer.vx / speed : 0;
+    const uy = moving ? pointer.vy / speed : 0;
+    const stretchAmt = Math.min(speed * config.voidStretchK, config.voidStretchMax);
+    // The ambient mass gets its own, larger velocity stretch so it surges and
+    // sloshes like a big slow body of fluid.
+    const ambientStretchAmt = Math.min(speed * config.ambientStretchK, config.ambientStretchMax);
 
     for (let r = 0; r < rows; r++) {
       const cy = r * cellH;
@@ -121,29 +134,61 @@ export function createField(canvas) {
         const ddy = cyc - py;
         const dist = Math.sqrt(ddx * ddx + ddy * ddy) || 0.0001;
 
-        // The zone picks which vocabulary a cell shows. The character swaps at
-        // the boundaries, but the tier opacity below is blended smoothly across
-        // them, so the zones themselves never read as visible rings.
+        // Distance from the lagged anchor decides the ambient/meta split, so
+        // the big ambient mass sits where it drifts to rather than tracking the
+        // cursor. The void and personal ring stay measured from the cursor.
+        const adx = cxc - ax;
+        const ady = cyc - ay;
+        let distSlow = Math.sqrt(adx * adx + ady * ady);
+
+        // Make the ambient edge fluid: stretch it with the cursor's velocity
+        // (a big soft comet, with a longer wake) so the whole mass surges and
+        // sloshes when you move.
+        if (moving) {
+          const along = adx * ux + ady * uy;
+          const perpx = adx - along * ux;
+          const perpy = ady - along * uy;
+          const perp = Math.sqrt(perpx * perpx + perpy * perpy);
+          const stretch = 1 + ambientStretchAmt * (along < 0 ? config.ambientTailBias : 1);
+          const alongScaled = along / stretch;
+          distSlow = Math.sqrt(alongScaled * alongScaled + perp * perp);
+        }
+
+        // ...and wobble the radius itself with the flow field so the boundary
+        // is an organic, breathing shape rather than a circle.
+        const ambientR =
+          config.ambientRadius +
+          (fieldNoise(cxc * config.ambientWobbleFreq, cyc * config.ambientWobbleFreq, time) - 0.5) *
+            2 *
+            config.ambientWobble;
+
+        // The zone picks which vocabulary a cell shows. Personal hugs the
+        // cursor; ambient vs meta follows the fluid anchor. Opacity is blended
+        // smoothly below so no boundary ever reads as a visible ring.
         let ch;
         if (dist < config.personalRadius) ch = personalRow[c];
-        else if (dist < config.ambientRadius) ch = ambientRow[c];
+        else if (distSlow < ambientR) ch = ambientRow[c];
         else ch = metaRow[c];
         if (ch === 0) continue; // empty cell (was a space)
 
-        const toAmbient = smoothstep(
-          config.personalRadius - config.tierBlend,
-          config.personalRadius + config.tierBlend,
-          dist
+        // Ambient<->meta base opacity comes from the anchor; the personal ring
+        // is layered on top from the cursor so it is never dimmed by the base.
+        const wPersonal =
+          1 -
+          smoothstep(
+            config.personalRadius - config.tierBlend,
+            config.personalRadius + config.tierBlend,
+            dist
+          );
+        const wMeta = smoothstep(
+          ambientR - config.tierBlend,
+          ambientR + config.tierBlend,
+          distSlow
         );
-        const toMeta = smoothstep(
-          config.ambientRadius - config.tierBlend,
-          config.ambientRadius + config.tierBlend,
-          dist
-        );
-        let tierAlpha = lerp(config.alphaPersonal, config.alphaAmbient, toAmbient);
-        tierAlpha = lerp(tierAlpha, config.alphaMeta, toMeta);
-        let noiseAmt = lerp(config.noisePersonal, config.noiseAmbient, toAmbient);
-        noiseAmt = lerp(noiseAmt, config.noiseMeta, toMeta);
+        let tierAlpha = lerp(config.alphaAmbient, config.alphaMeta, wMeta);
+        tierAlpha = lerp(tierAlpha, config.alphaPersonal, wPersonal);
+        let noiseAmt = lerp(config.noiseAmbient, config.noiseMeta, wMeta);
+        noiseAmt = lerp(noiseAmt, config.noisePersonal, wPersonal);
 
         // Drop cells inside a wobbling radius. The radius breathes with the
         // flow field, so the empty space is an irregular blob and its outline
@@ -152,17 +197,31 @@ export function createField(canvas) {
           (fieldNoise(cxc * config.voidWobbleFreq, cyc * config.voidWobbleFreq, time) - 0.5) *
           2 *
           config.voidWobble;
-        if (dist < config.voidRadius + wobble) continue;
+
+        // Warp the distance used for the void so a drag stretches it into a
+        // fluid, comet-like shape instead of a rigid circle.
+        let effDist = dist;
+        if (moving) {
+          const along = ddx * ux + ddy * uy;
+          const perpx = ddx - along * ux;
+          const perpy = ddy - along * uy;
+          const perp = Math.sqrt(perpx * perpx + perpy * perpy);
+          const stretch = 1 + stretchAmt * (along < 0 ? config.voidTailBias : 1);
+          const alongScaled = along / stretch;
+          effDist = Math.sqrt(alongScaled * alongScaled + perp * perp);
+        }
+        if (effDist < config.voidRadius + wobble) continue;
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
         const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
         if (alpha < 0.015) continue;
 
         // Lean the cell outward along a smooth, low-amplitude field so the
-        // words back away from the cursor. Kept gentle to avoid obvious curves.
+        // words back away from the cursor. The falloff uses the same warped
+        // distance, so the lean follows the stretched void.
         let dx = cx;
         let dy = cy;
-        const influence = smoothstep(config.displaceRadius, 0, dist);
+        const influence = smoothstep(config.displaceRadius, 0, effDist);
         if (influence > 0) {
           const push = config.displaceAmount * influence;
           dx += (ddx / dist) * push;
