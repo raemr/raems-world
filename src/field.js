@@ -15,12 +15,113 @@ export function createField(canvas) {
   let cellW = 0;
   let cellH = 0;
   let fontSize = 14;
+  let raemFontSize = 96;
+  let raemBox = null;
+  let reveal = 0;
+  let lastNow = 0;
+  let hoveringRaem = false;
+  let pulseRestUntil = 0;
 
   let grids = null;
   const buckets = []; // reused each frame; buckets[i] = [x, y, char, x, y, char, ...]
 
   function pickFontSize(w) {
     return Math.round(clamp(w / 115, config.fontSizeMin, config.fontSizeMax));
+  }
+
+  function pickRaemFontSize(w) {
+    return Math.round(clamp(w * config.raemFontScale, config.raemFontSizeMin, config.raemFontSizeMax));
+  }
+
+  function updateRaemLayout() {
+    raemFontSize = pickRaemFontSize(cssW);
+    ctx.font = `700 ${raemFontSize}px ${config.fontFamily}`;
+    ctx.textBaseline = "alphabetic";
+
+    const metrics = ctx.measureText(config.raemText);
+    const width = metrics.width;
+    const ascent = metrics.actualBoundingBoxAscent || raemFontSize * 0.74;
+    const descent = metrics.actualBoundingBoxDescent || raemFontSize * 0.18;
+    const textX = cssW - config.raemMarginX - width;
+    const textY = cssH - config.raemMarginY - descent;
+
+    raemBox = {
+      textX,
+      textY,
+      x: textX - config.raemPadX,
+      y: textY - ascent - config.raemPadY,
+      w: width + config.raemPadX * 2,
+      h: ascent + descent + config.raemPadY * 2,
+    };
+  }
+
+  function isInsideRaemBox(x, y) {
+    return (
+      raemBox &&
+      x >= raemBox.x &&
+      x <= raemBox.x + raemBox.w &&
+      y >= raemBox.y &&
+      y <= raemBox.y + raemBox.h
+    );
+  }
+
+  function updateReveal(now, pointer) {
+    const dt = lastNow ? Math.min((now - lastNow) / 1000, 0.08) : 1 / 60;
+    lastNow = now;
+
+    hoveringRaem = isInsideRaemBox(pointer.rawX, pointer.rawY);
+    const target = hoveringRaem ? 1 : 0;
+    const speed = target > reveal ? config.raemRevealInSpeed : config.raemRevealOutSpeed;
+    reveal += (target - reveal) * (1 - Math.exp(-speed * dt));
+  }
+
+  function updatePulseRest(now) {
+    if (hoveringRaem) {
+      pulseRestUntil = now + config.raemPulseRestAfterHover;
+    }
+  }
+
+  function pulseBoost(x, y, now, active) {
+    if (!active || !raemBox) return 0;
+
+    const ox = raemBox.x + raemBox.w * 0.5;
+    const oy = raemBox.y + raemBox.h * 0.5;
+    const dx = x - ox;
+    const dy = y - oy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const fade = 1 - smoothstep(0, config.raemPulseFadeDistance, dist);
+    if (fade <= 0) return 0;
+
+    const pulseAge = now % config.raemPulsePeriod;
+    const waveRadius = (pulseAge / 1000) * config.raemPulseSpeed;
+    const maxWaveRadius = (config.raemPulsePeriod / 1000) * config.raemPulseSpeed;
+    const radialFade = 1 - smoothstep(0, maxWaveRadius, waveRadius);
+    const wave = 1 - smoothstep(0, config.raemPulseWidth, Math.abs(dist - waveRadius));
+    const sourceLife = 1 - smoothstep(0, config.raemPulseWidth * 2, waveRadius);
+    const source = (1 - smoothstep(0, config.raemPulseSourceRadius, dist)) * sourceLife;
+
+    return fade * radialFade * (wave * config.raemPulseAlpha + source * config.raemPulseSourceAlpha);
+  }
+
+  function roundedRectSdf(x, y, box, radius) {
+    const halfW = box.w * 0.5;
+    const halfH = box.h * 0.5;
+    const dx = Math.abs(x - (box.x + halfW)) - (halfW - radius);
+    const dy = Math.abs(y - (box.y + halfH)) - (halfH - radius);
+    const outsideX = Math.max(dx, 0);
+    const outsideY = Math.max(dy, 0);
+    return Math.sqrt(outsideX * outsideX + outsideY * outsideY) + Math.min(Math.max(dx, dy), 0) - radius;
+  }
+
+  function drawRaem() {
+    if (!raemBox) return;
+
+    ctx.font = `700 ${raemFontSize}px ${config.fontFamily}`;
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = config.ink;
+    ctx.globalAlpha = lerp(config.raemAlphaIdle, config.raemAlphaReveal, reveal);
+    ctx.fillText(config.raemText, raemBox.textX, raemBox.textY);
+    ctx.globalAlpha = 1;
   }
 
   // Build one row by concatenating entries (words or whole phrases) until the
@@ -75,12 +176,19 @@ export function createField(canvas) {
       ambient: buildGrid(ambientWords, 11),
       meta: buildGrid(metaPhrases, 29),
     };
+
+    updateRaemLayout();
   }
 
   function render(now, pointer) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = config.bg;
     ctx.fillRect(0, 0, cssW, cssH);
+
+    updateReveal(now, pointer);
+    updatePulseRest(now);
+    const pulseActive = now >= pulseRestUntil && !hoveringRaem && reveal < 0.02;
+    drawRaem();
 
     ctx.font = `${fontSize}px ${config.fontFamily}`;
     ctx.textBaseline = "top";
@@ -210,10 +318,16 @@ export function createField(canvas) {
           const alongScaled = along / stretch;
           effDist = Math.sqrt(alongScaled * alongScaled + perp * perp);
         }
-        if (effDist < config.voidRadius + wobble) continue;
+
+        const cursorSdf = effDist - (config.voidRadius + wobble);
+        const raemSdf = roundedRectSdf(cxc, cyc, raemBox, config.raemRadius);
+        const voidSdf = lerp(cursorSdf, raemSdf, smoothstep(0, 1, reveal));
+        if (voidSdf < 0) continue;
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
-        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
+        let alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
+        const pulse = pulseBoost(cxc, cyc, now, pulseActive);
+        alpha = clamp(alpha + pulse * (1 - alpha), 0, 1);
         if (alpha < 0.015) continue;
 
         // Lean the cell outward along a smooth, low-amplitude field so the
