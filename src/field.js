@@ -98,6 +98,14 @@ export function createField(canvas) {
     const halfH = cssH / 2;
     const time = now * config.noiseTimeSpeed;
 
+    // Velocity of the cursor sets up an anisotropic warp of the void: it gets
+    // longer along the direction of travel (and longer still in the wake).
+    const speed = pointer.speed;
+    const moving = speed > 0.05;
+    const ux = moving ? pointer.vx / speed : 0;
+    const uy = moving ? pointer.vy / speed : 0;
+    const stretchAmt = Math.min(speed * config.voidStretchK, config.voidStretchMax);
+
     for (let r = 0; r < rows; r++) {
       const cy = r * cellH;
       const cyc = cy + cellH * 0.5;
@@ -152,17 +160,31 @@ export function createField(canvas) {
           (fieldNoise(cxc * config.voidWobbleFreq, cyc * config.voidWobbleFreq, time) - 0.5) *
           2 *
           config.voidWobble;
-        if (dist < config.voidRadius + wobble) continue;
+
+        // Warp the distance used for the void so a drag stretches it into a
+        // fluid, comet-like shape instead of a rigid circle.
+        let effDist = dist;
+        if (moving) {
+          const along = ddx * ux + ddy * uy;
+          const perpx = ddx - along * ux;
+          const perpy = ddy - along * uy;
+          const perp = Math.sqrt(perpx * perpx + perpy * perpy);
+          const stretch = 1 + stretchAmt * (along < 0 ? config.voidTailBias : 1);
+          const alongScaled = along / stretch;
+          effDist = Math.sqrt(alongScaled * alongScaled + perp * perp);
+        }
+        if (effDist < config.voidRadius + wobble) continue;
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
         const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
         if (alpha < 0.015) continue;
 
         // Lean the cell outward along a smooth, low-amplitude field so the
-        // words back away from the cursor. Kept gentle to avoid obvious curves.
+        // words back away from the cursor. The falloff uses the same warped
+        // distance, so the lean follows the stretched void.
         let dx = cx;
         let dy = cy;
-        const influence = smoothstep(config.displaceRadius, 0, dist);
+        const influence = smoothstep(config.displaceRadius, 0, effDist);
         if (influence > 0) {
           const push = config.displaceAmount * influence;
           dx += (ddx / dist) * push;

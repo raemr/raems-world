@@ -8,6 +8,9 @@ export function createPointer(width, height) {
     rawY: height / 2,
     x: width / 2,
     y: height / 2,
+    vx: 0, // smoothed velocity of the eased position, px/frame
+    vy: 0,
+    speed: 0,
     lastMove: -Infinity,
     inside: false,
   };
@@ -54,6 +57,14 @@ export function updatePointer(p, now, width, height) {
     ty = cy + Math.sin(a * 1.3) * height * 0.28 + Math.sin(a * 0.53) * height * 0.08;
   }
 
+  const prevX = p.x;
+  const prevY = p.y;
   p.x += (tx - p.x) * config.pointerLerp;
   p.y += (ty - p.y) * config.pointerLerp;
+
+  // Track how fast the eased position is moving, smoothed so the void warp
+  // builds and relaxes fluidly instead of snapping.
+  p.vx += (p.x - prevX - p.vx) * config.velocitySmoothing;
+  p.vy += (p.y - prevY - p.vy) * config.velocitySmoothing;
+  p.speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
 }

@@ -38,6 +38,14 @@ export const config = {
   displaceRadius: 210, // px of influence
   displaceAmount: 14, // max px a cell is pushed outward
 
+  // Dragging the cursor stretches the void along the direction of motion, with
+  // a longer wake trailing behind, so it reads like a shape moving through
+  // fluid rather than a rigid circle.
+  voidStretchK: 0.028, // how much speed (px/frame) elongates the void
+  voidStretchMax: 1.5, // cap on that elongation
+  voidTailBias: 1.5, // extra stretch behind the cursor vs. in front
+  velocitySmoothing: 0.16, // how quickly tracked velocity eases in/out
+
   // Flow field that drives the soft organic shapes.
   noiseSpaceFreq: 0.021,
   noiseTimeSpeed: 0.00017,
