@@ -35,7 +35,7 @@ export const config = {
   // Cells near the cursor lean outward along a smooth, low-amplitude field so
   // the surrounding words back away from it. Kept small to avoid any obvious
   // curved warping of the lines.
-  displaceRadius: 210, // px of influence
+  displaceRadius: 110, // px of influence
   displaceAmount: 14, // max px a cell is pushed outward
 
   // Dragging the cursor stretches the void along the direction of motion, with
