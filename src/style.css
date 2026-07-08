@@ -2,6 +2,15 @@
   /* Claude light mode palette, warm cream */
   --bg: #f2ead6;
   --ink: #2b2a27;
+  --toggle-bg: rgba(242, 234, 214, 0.58);
+  --toggle-border: rgba(43, 42, 39, 0.24);
+  --toggle-ink: #2b2a27;
+  --toggle-shadow: rgba(43, 42, 39, 0.16);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 * {
@@ -49,6 +58,77 @@ body {
   animation: breathe 4s ease-in-out infinite;
 }
 
+.theme-toggle {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--toggle-border);
+  border-radius: 50%;
+  background: var(--toggle-bg);
+  color: var(--toggle-ink);
+  box-shadow: 0 14px 34px var(--toggle-shadow);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    backdrop-filter 180ms ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.theme-toggle:active {
+  transform: translateY(0);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--toggle-ink);
+  outline-offset: 4px;
+}
+
+.theme-toggle__icon {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: inset -6px -2px 0 var(--toggle-bg);
+  transition:
+    transform 720ms ease;
+}
+
+.theme-toggle__icon::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 720ms ease,
+    transform 720ms ease;
+}
+
+:root[data-theme="dark"] .theme-toggle__icon {
+  box-shadow: none;
+  transform: rotate(180deg) scale(0.82);
+}
+
+:root[data-theme="dark"] .theme-toggle__icon::before {
+  opacity: 0.42;
+  transform: scale(1);
+}
+
 @keyframes breathe {
   0%,
   100% {
@@ -60,6 +140,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body,
+  .theme-toggle,
+  .theme-toggle__icon,
+  .theme-toggle__icon::before {
+    transition: none;
+  }
+
   .hint {
     animation: none;
   }

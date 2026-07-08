@@ -57,15 +57,15 @@ export function createField(canvas) {
     return `${style} 700 ${size}px ${family}`;
   }
 
-  function applyWordmarkShadow() {
-    ctx.shadowColor = config.wordmarkShadowColor;
+  function applyWordmarkShadow(palette) {
+    ctx.shadowColor = palette.wordmarkShadowColor;
     ctx.shadowBlur = config.wordmarkShadowBlur;
     ctx.shadowOffsetX = config.wordmarkShadowOffsetX;
     ctx.shadowOffsetY = config.wordmarkShadowOffsetY;
   }
 
-  function applyRaemShadow() {
-    ctx.shadowColor = config.wordmarkRaemShadowColor;
+  function applyRaemShadow(palette) {
+    ctx.shadowColor = palette.wordmarkRaemShadowColor;
     ctx.shadowBlur = config.wordmarkRaemShadowBlur;
     ctx.shadowOffsetX = config.wordmarkRaemShadowOffsetX;
     ctx.shadowOffsetY = config.wordmarkRaemShadowOffsetY;
@@ -246,23 +246,23 @@ export function createField(canvas) {
     return Math.sqrt(outsideX * outsideX + outsideY * outsideY) + Math.min(Math.max(dx, dy), 0) - radius;
   }
 
-  function drawWordmark(now) {
+  function drawWordmark(now, palette) {
     if (!raemBox || !wordmark) return;
 
     const state = wordmarkState(now);
     const leadAlpha = config.raemAlphaReveal;
     const raemAlpha = config.wordmarkRaemAlphaReveal;
     ctx.textBaseline = "alphabetic";
-    applyWordmarkShadow();
+    applyWordmarkShadow(palette);
 
     ctx.font = wordmarkFont(config.wordmarkFontFamily);
-    ctx.fillStyle = config.ink;
+    ctx.fillStyle = palette.ink;
     ctx.globalAlpha = leadAlpha * state.hi;
     ctx.fillText(config.wordmarkLeadText, wordmark.hiX, wordmark.hiY);
     ctx.globalAlpha = leadAlpha * state.intro;
     ctx.fillText(config.wordmarkIntroText, wordmark.introX, wordmark.textY);
 
-    applyRaemShadow();
+    applyRaemShadow(palette);
     ctx.font = wordmarkFont(
       config.wordmarkFontFamily,
       hoveringRaem && seaClearStart === null ? "italic" : "normal",
@@ -270,7 +270,7 @@ export function createField(canvas) {
     );
     ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue);
     ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
-    ctx.fillStyle = config.raemPulseInk;
+    ctx.fillStyle = palette.raemPulseInk;
     ctx.globalAlpha = raemAlpha * state.intro * state.blue;
     ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
     ctx.globalAlpha = 1;
@@ -333,22 +333,22 @@ export function createField(canvas) {
     updateRaemLayout();
   }
 
-  function render(now, pointer) {
+  function render(now, pointer, palette = config.palettes.light) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = config.bg;
+    ctx.fillStyle = palette.bg;
     ctx.fillRect(0, 0, cssW, cssH);
 
     updateReveal(now, pointer);
     updateSeaClear(now);
     const pulseActive = seaClearStart === null && wordmarkState(now).blue >= 0.96;
     if (seaClearComplete) {
-      drawWordmark(now);
+      drawWordmark(now, palette);
       return;
     }
 
     ctx.font = `${fontSize}px ${config.fontFamily}`;
     ctx.textBaseline = "top";
-    ctx.fillStyle = config.ink;
+    ctx.fillStyle = palette.ink;
 
     const nb = config.alphaBuckets;
     for (let i = 0; i <= nb; i++) {
@@ -523,7 +523,7 @@ export function createField(canvas) {
         ctx.fillText(b[k + 2], b[k], b[k + 1]);
       }
     }
-    ctx.fillStyle = config.raemPulseInk;
+    ctx.fillStyle = palette.raemPulseInk;
     for (let i = 1; i <= nb; i++) {
       const b = pulseBuckets[i];
       if (b.length === 0) continue;
@@ -533,7 +533,7 @@ export function createField(canvas) {
       }
     }
     ctx.globalAlpha = 1;
-    drawWordmark(now);
+    drawWordmark(now, palette);
   }
 
   return { rebuild, render };
