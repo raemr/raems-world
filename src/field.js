@@ -96,7 +96,6 @@ export function createField(canvas) {
     const py = pointer.y;
     const halfW = cssW / 2;
     const halfH = cssH / 2;
-    const pushR = config.voidRadius * config.pushRadiusMul;
     const time = now * config.noiseTimeSpeed;
 
     for (let r = 0; r < rows; r++) {
@@ -122,39 +121,45 @@ export function createField(canvas) {
         const ddy = cyc - py;
         const dist = Math.sqrt(ddx * ddx + ddy * ddy) || 0.0001;
 
-        // Choose the zone (and its character) by distance from the cursor.
+        // The zone picks which vocabulary a cell shows. The character swaps at
+        // the boundaries, but the tier opacity below is blended smoothly across
+        // them, so the zones themselves never read as visible rings.
         let ch;
-        let tierAlpha;
-        let noiseAmt;
-        if (dist < config.personalRadius) {
-          ch = personalRow[c];
-          tierAlpha = config.alphaPersonal;
-          noiseAmt = config.noisePersonal;
-        } else if (dist < config.ambientRadius) {
-          ch = ambientRow[c];
-          tierAlpha = config.alphaAmbient;
-          noiseAmt = config.noiseAmbient;
-        } else {
-          ch = metaRow[c];
-          tierAlpha = config.alphaMeta;
-          noiseAmt = config.noiseMeta;
-        }
+        if (dist < config.personalRadius) ch = personalRow[c];
+        else if (dist < config.ambientRadius) ch = ambientRow[c];
+        else ch = metaRow[c];
         if (ch === 0) continue; // empty cell (was a space)
 
-        // Hollow out the centre and leave faint gap rings between zones.
-        const voidFade = smoothstep(config.voidRadius * 0.35, config.voidRadius, dist);
-        let gap = smoothstep(0, config.crossfade, Math.abs(dist - config.personalRadius));
-        gap *= smoothstep(0, config.crossfade, Math.abs(dist - config.ambientRadius));
+        const toAmbient = smoothstep(
+          config.personalRadius - config.tierBlend,
+          config.personalRadius + config.tierBlend,
+          dist
+        );
+        const toMeta = smoothstep(
+          config.ambientRadius - config.tierBlend,
+          config.ambientRadius + config.tierBlend,
+          dist
+        );
+        let tierAlpha = lerp(config.alphaPersonal, config.alphaAmbient, toAmbient);
+        tierAlpha = lerp(tierAlpha, config.alphaMeta, toMeta);
+        let noiseAmt = lerp(config.noisePersonal, config.noiseAmbient, toAmbient);
+        noiseAmt = lerp(noiseAmt, config.noiseMeta, toMeta);
+
+        // Hollow out the void right under the cursor (opacity only).
+        const voidFade = smoothstep(config.voidRadius * 0.4, config.voidRadius, dist);
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
-        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt) * voidFade * gap;
+        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt) * voidFade;
         if (alpha < 0.015) continue;
 
-        // Push cells away from the cursor so the field wraps around it.
+        // Nudge the cell outward along a smooth, low-amplitude field. Because
+        // the displacement varies gently with position, neighboring cells move
+        // together and the text keeps its spacing as it flows around the cursor.
         let dx = cx;
         let dy = cy;
-        if (dist < pushR) {
-          const push = (pushR - dist) * config.repulsionStrength;
+        const influence = smoothstep(config.displaceRadius, 0, dist);
+        if (influence > 0) {
+          const push = config.displaceAmount * influence;
           dx += (ddx / dist) * push;
           dy += (ddy / dist) * push;
         }

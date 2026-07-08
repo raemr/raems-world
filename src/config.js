@@ -7,8 +7,9 @@ export const config = {
   fontSizeMax: 16,
   lineHeightRatio: 1.16, // cell height = fontSize * this
 
-  // Palette (Claude light mode). All tonal variation comes from opacity.
-  bg: "#faf9f5",
+  // Palette (Claude light mode, warm cream). All tonal variation comes from
+  // opacity, never color.
+  bg: "#f2ead6",
   ink: "#2b2a27",
 
   // Cursor zones, in CSS pixels, measured from the (smoothed) pointer.
@@ -19,12 +20,16 @@ export const config = {
   voidRadius: 64,
   personalRadius: 160,
   ambientRadius: 340,
-  crossfade: 24, // width of the faint gap rings between zones
+  // How wide (px) the tier opacity blends across a zone boundary. The zones
+  // still decide which words go where, but this keeps the boundaries from ever
+  // reading as visible rings.
+  tierBlend: 72,
 
-  // Repulsion. Cells inside pushRadius are displaced radially outward so the
-  // field appears to wrap around the cursor.
-  pushRadiusMul: 1.4, // pushRadius = voidRadius * this
-  repulsionStrength: 0.55,
+  // Repulsion. Cells near the cursor are nudged outward by a smooth, low
+  // amplitude field. Neighboring cells get near-identical vectors, so the text
+  // keeps its spacing and flows around the cursor instead of piling up.
+  displaceRadius: 230, // px of influence
+  displaceAmount: 26, // max px a cell is pushed outward
 
   // Flow field that drives the soft organic shapes.
   noiseSpaceFreq: 0.021,
