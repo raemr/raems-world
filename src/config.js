@@ -93,6 +93,10 @@ export const config = {
   raemRevealInSpeed: 5.2,
   // How quickly the RAEM-shaped void relaxes after hover.
   raemRevealOutSpeed: 3.4,
+  // How quickly RAEM crossfades from roman to italic on hover.
+  wordmarkItalicInSpeed: 7.5,
+  // How quickly RAEM crossfades back to roman after hover.
+  wordmarkItalicOutSpeed: 5.5,
   // Horizontal gap between I'M and RAEM, measured in ems.
   wordmarkGap: 0.28, // em
   // Fade-in duration for HI.

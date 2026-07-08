@@ -19,6 +19,7 @@ export function createField(canvas) {
   let raemBox = null;
   let wordmark = null;
   let reveal = 0;
+  let italicReveal = 0;
   let lastNow = 0;
   let introStart = 0;
   let hoveringRaem = false;
@@ -154,6 +155,10 @@ export function createField(canvas) {
     const target = hoveringRaem && seaClearStart === null ? 1 : 0;
     const speed = target > reveal ? config.raemRevealInSpeed : config.raemRevealOutSpeed;
     reveal += (target - reveal) * (1 - Math.exp(-speed * dt));
+
+    const italicSpeed =
+      target > italicReveal ? config.wordmarkItalicInSpeed : config.wordmarkItalicOutSpeed;
+    italicReveal += (target - italicReveal) * (1 - Math.exp(-italicSpeed * dt));
   }
 
   function pulseBoost(x, y, now, active) {
@@ -252,6 +257,8 @@ export function createField(canvas) {
     const state = wordmarkState(now);
     const leadAlpha = config.raemAlphaReveal;
     const raemAlpha = config.wordmarkRaemAlphaReveal;
+    const italicMix = smoothstep(0, 1, italicReveal);
+    const romanMix = 1 - italicMix;
     ctx.textBaseline = "alphabetic";
     applyWordmarkShadow(palette);
 
@@ -263,18 +270,22 @@ export function createField(canvas) {
     ctx.fillText(config.wordmarkIntroText, wordmark.introX, wordmark.textY);
 
     applyRaemShadow(palette);
-    ctx.font = wordmarkFont(
-      config.wordmarkFontFamily,
-      hoveringRaem && seaClearStart === null ? "italic" : "normal",
-      raemFontSize * config.wordmarkRaemScale
-    );
-    ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue);
-    ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
-    ctx.fillStyle = palette.raemPulseInk;
-    ctx.globalAlpha = raemAlpha * state.intro * state.blue;
-    ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+    drawRaemStyle("normal", romanMix);
+    drawRaemStyle("italic", italicMix);
     ctx.globalAlpha = 1;
     clearShadow();
+
+    function drawRaemStyle(style, alphaMix) {
+      if (alphaMix <= 0.001) return;
+
+      ctx.font = wordmarkFont(config.wordmarkFontFamily, style, raemFontSize * config.wordmarkRaemScale);
+      ctx.fillStyle = palette.ink;
+      ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue) * alphaMix;
+      ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+      ctx.fillStyle = palette.raemPulseInk;
+      ctx.globalAlpha = raemAlpha * state.intro * state.blue * alphaMix;
+      ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+    }
   }
 
   // Build one row by concatenating entries (words or whole phrases) until the
