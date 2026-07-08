@@ -107,6 +107,9 @@ export function createField(canvas) {
     const ux = moving ? pointer.vx / speed : 0;
     const uy = moving ? pointer.vy / speed : 0;
     const stretchAmt = Math.min(speed * config.voidStretchK, config.voidStretchMax);
+    // The ambient mass gets its own, larger velocity stretch so it surges and
+    // sloshes like a big slow body of fluid.
+    const ambientStretchAmt = Math.min(speed * config.ambientStretchK, config.ambientStretchMax);
 
     for (let r = 0; r < rows; r++) {
       const cy = r * cellH;
@@ -136,14 +139,35 @@ export function createField(canvas) {
         // cursor. The void and personal ring stay measured from the cursor.
         const adx = cxc - ax;
         const ady = cyc - ay;
-        const distSlow = Math.sqrt(adx * adx + ady * ady);
+        let distSlow = Math.sqrt(adx * adx + ady * ady);
+
+        // Make the ambient edge fluid: stretch it with the cursor's velocity
+        // (a big soft comet, with a longer wake) so the whole mass surges and
+        // sloshes when you move.
+        if (moving) {
+          const along = adx * ux + ady * uy;
+          const perpx = adx - along * ux;
+          const perpy = ady - along * uy;
+          const perp = Math.sqrt(perpx * perpx + perpy * perpy);
+          const stretch = 1 + ambientStretchAmt * (along < 0 ? config.ambientTailBias : 1);
+          const alongScaled = along / stretch;
+          distSlow = Math.sqrt(alongScaled * alongScaled + perp * perp);
+        }
+
+        // ...and wobble the radius itself with the flow field so the boundary
+        // is an organic, breathing shape rather than a circle.
+        const ambientR =
+          config.ambientRadius +
+          (fieldNoise(cxc * config.ambientWobbleFreq, cyc * config.ambientWobbleFreq, time) - 0.5) *
+            2 *
+            config.ambientWobble;
 
         // The zone picks which vocabulary a cell shows. Personal hugs the
-        // cursor; ambient vs meta follows the slow anchor. Opacity is blended
+        // cursor; ambient vs meta follows the fluid anchor. Opacity is blended
         // smoothly below so no boundary ever reads as a visible ring.
         let ch;
         if (dist < config.personalRadius) ch = personalRow[c];
-        else if (distSlow < config.ambientRadius) ch = ambientRow[c];
+        else if (distSlow < ambientR) ch = ambientRow[c];
         else ch = metaRow[c];
         if (ch === 0) continue; // empty cell (was a space)
 
@@ -157,8 +181,8 @@ export function createField(canvas) {
             dist
           );
         const wMeta = smoothstep(
-          config.ambientRadius - config.tierBlend,
-          config.ambientRadius + config.tierBlend,
+          ambientR - config.tierBlend,
+          ambientR + config.tierBlend,
           distSlow
         );
         let tierAlpha = lerp(config.alphaAmbient, config.alphaMeta, wMeta);

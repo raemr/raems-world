@@ -25,6 +25,13 @@ export const config = {
   // rather than tracking the pointer. Void + personal still hug the cursor.
   ambientRadius: 320,
   ambientLerp: 0.005, // how slowly the ambient anchor chases the cursor
+  // The ambient edge is fluid: it breathes with the flow field and surges with
+  // the cursor's velocity, like a big slow body of liquid.
+  ambientWobble: 60, // +/- px the ambient edge breathes with the noise
+  ambientWobbleFreq: 0.004, // low frequency -> large, soft lobes
+  ambientStretchK: 0.005, // how much speed elongates the ambient mass
+  ambientStretchMax: 2.2, // cap on that elongation
+  ambientTailBias: 1.6, // extra stretch in the wake behind the motion
   // How wide (px) the tier opacity blends across a zone boundary. The zones
   // still decide which words go where, but this keeps the boundaries from ever
   // reading as visible rings.
