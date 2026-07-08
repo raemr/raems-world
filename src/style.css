@@ -1,0 +1,71 @@
+:root {
+  /* Claude light mode palette */
+  --bg: #faf9f5;
+  --ink: #2b2a27;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+#field {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+}
+
+/* Foreground content sits above the canvas but never eats pointer events,
+   so the field keeps reacting to the cursor underneath it. */
+#content {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  padding: 28px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+}
+
+.wordmark {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.hint {
+  opacity: 0.4;
+  animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}
