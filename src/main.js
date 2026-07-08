@@ -1,13 +1,28 @@
 import { createField } from "./field.js";
 import { createPointer, updatePointer } from "./pointer.js";
+import { createThemeController } from "./theme.js";
 
 const canvas = document.getElementById("field");
+const themeToggle = document.getElementById("theme-toggle");
 const field = createField(canvas);
 const pointer = createPointer(window.innerWidth, window.innerHeight);
+const theme = createThemeController();
 
 field.rebuild();
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function updateThemeToggleLabel() {
+  const nextMode = theme.mode === "dark" ? "light" : "dark";
+  themeToggle.setAttribute("aria-label", `Switch to ${nextMode} mode`);
+}
+
+themeToggle.addEventListener("click", () => {
+  theme.toggle();
+  updateThemeToggleLabel();
+  if (reducedMotion) drawStatic(performance.now());
+});
+updateThemeToggleLabel();
 
 // Rebuild the grid on resize, but debounce it since it reallocates everything.
 let resizeTimer;
@@ -19,10 +34,10 @@ window.addEventListener("resize", () => {
   }, 150);
 });
 
-function drawStatic() {
+function drawStatic(now = 0) {
   pointer.x = window.innerWidth / 2;
   pointer.y = window.innerHeight / 2;
-  field.render(0, pointer);
+  field.render(now, pointer, theme.update(now));
 }
 
 if (reducedMotion) {
@@ -30,8 +45,9 @@ if (reducedMotion) {
   drawStatic();
 } else {
   const loop = (now) => {
+    const palette = theme.update(now);
     updatePointer(pointer, now, window.innerWidth, window.innerHeight);
-    field.render(now, pointer);
+    field.render(now, pointer, palette);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
