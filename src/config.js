@@ -27,14 +27,18 @@ export const config = {
   raemAlphaReveal: 0.72,
   raemRevealInSpeed: 5.2,
   raemRevealOutSpeed: 3.4,
+  raemPulseInk: "#6f8490",
   raemPulseSpeed: 180, // px/s
-  raemPulsePeriod: 3000, // ms between emitted wavefronts
+  raemPulsePeriod: 4000, // ms between emitted wavefronts
   raemPulseRestAfterHover: 10000, // ms before pulsing resumes after hover
-  raemPulseWidth: 58, // thickness of the brightened wavefront
-  raemPulseAlpha: 0.34,
+  raemPulseWidth: 64, // thickness of the brightened wavefront
+  raemPulseAlpha: 0.42,
   raemPulseSourceRadius: 120,
-  raemPulseSourceAlpha: 0.22,
-  raemPulseFadeDistance: 760,
+  raemPulseSourceAlpha: 0.24,
+  raemPulseFadeDistance: 860,
+  raemPulseWobble: 38,
+  raemPulseWobbleFreq: 0.007,
+  raemPulseWobbleSpeed: 0.00022,
 
   // Cursor zones, in CSS pixels, measured from the (smoothed) pointer.
   //   dist < voidRadius        -> cell is dropped; the surrounding words draw
@@ -100,7 +104,7 @@ export const config = {
 
   // Pointer smoothing and idle behaviour.
   pointerLerp: 0.12,
-  idleTimeout: 2600, // ms of stillness before the focus point drifts
+  idleTimeout: 12000, // ms of stillness before the focus point drifts
   idleDriftSpeed: 0.00012,
 
   // Rendering.

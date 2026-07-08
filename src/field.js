@@ -24,6 +24,7 @@ export function createField(canvas) {
 
   let grids = null;
   const buckets = []; // reused each frame; buckets[i] = [x, y, char, x, y, char, ...]
+  const pulseBuckets = [];
 
   function pickFontSize(w) {
     return Math.round(clamp(w / 115, config.fontSizeMin, config.fontSizeMax));
@@ -96,7 +97,17 @@ export function createField(canvas) {
     const waveRadius = (pulseAge / 1000) * config.raemPulseSpeed;
     const maxWaveRadius = (config.raemPulsePeriod / 1000) * config.raemPulseSpeed;
     const radialFade = 1 - smoothstep(0, maxWaveRadius, waveRadius);
-    const wave = 1 - smoothstep(0, config.raemPulseWidth, Math.abs(dist - waveRadius));
+    const wobble =
+      (fieldNoise(
+        x * config.raemPulseWobbleFreq,
+        y * config.raemPulseWobbleFreq,
+        now * config.raemPulseWobbleSpeed
+      ) -
+        0.5) *
+      2 *
+      config.raemPulseWobble;
+    const waveDist = dist + wobble;
+    const wave = 1 - smoothstep(0, config.raemPulseWidth, Math.abs(waveDist - waveRadius));
     const sourceLife = 1 - smoothstep(0, config.raemPulseWidth * 2, waveRadius);
     const source = (1 - smoothstep(0, config.raemPulseSourceRadius, dist)) * sourceLife;
 
@@ -198,6 +209,8 @@ export function createField(canvas) {
     for (let i = 0; i <= nb; i++) {
       if (!buckets[i]) buckets[i] = [];
       else buckets[i].length = 0;
+      if (!pulseBuckets[i]) pulseBuckets[i] = [];
+      else pulseBuckets[i].length = 0;
     }
 
     const px = pointer.x;
@@ -325,10 +338,9 @@ export function createField(canvas) {
         if (voidSdf < 0) continue;
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
-        let alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
+        const alpha = vignette * tierAlpha * lerp(1, n, noiseAmt);
         const pulse = pulseBoost(cxc, cyc, now, pulseActive);
-        alpha = clamp(alpha + pulse * (1 - alpha), 0, 1);
-        if (alpha < 0.015) continue;
+        if (alpha < 0.015 && pulse < 0.015) continue;
 
         // Lean the cell outward along a smooth, low-amplitude field so the
         // words back away from the cursor. The falloff uses the same warped
@@ -342,14 +354,29 @@ export function createField(canvas) {
           dy += (ddy / dist) * push;
         }
 
-        const b = buckets[Math.min(nb, Math.round(alpha * nb))];
-        b.push(dx, dy, ch);
+        if (alpha >= 0.015) {
+          const b = buckets[Math.min(nb, Math.round(alpha * nb))];
+          b.push(dx, dy, ch);
+        }
+        if (pulse >= 0.015) {
+          const pb = pulseBuckets[Math.min(nb, Math.round(pulse * nb))];
+          pb.push(dx, dy, ch);
+        }
       }
     }
 
     // One draw pass per opacity bucket keeps globalAlpha changes cheap.
     for (let i = 1; i <= nb; i++) {
       const b = buckets[i];
+      if (b.length === 0) continue;
+      ctx.globalAlpha = i / nb;
+      for (let k = 0; k < b.length; k += 3) {
+        ctx.fillText(b[k + 2], b[k], b[k + 1]);
+      }
+    }
+    ctx.fillStyle = config.raemPulseInk;
+    for (let i = 1; i <= nb; i++) {
+      const b = pulseBuckets[i];
       if (b.length === 0) continue;
       ctx.globalAlpha = i / nb;
       for (let k = 0; k < b.length; k += 3) {
