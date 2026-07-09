@@ -4,11 +4,15 @@ import { createThemeController } from "./theme.js";
 
 const canvas = document.getElementById("field");
 const themeToggle = document.getElementById("theme-toggle");
-const field = createField(canvas);
 const pointer = createPointer(window.innerWidth, window.innerHeight);
 const theme = createThemeController();
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const field = createField(canvas, {
+  reducedMotion,
+  onNeedsRedraw: () => drawStatic(performance.now()),
+});
 
 // The "move your cursor" hint has served its purpose the moment the cursor
 // (or a touch) moves, so fade it out on the first interaction.
@@ -16,6 +20,37 @@ const hint = document.querySelector(".hint");
 const dismissHint = () => hint && hint.classList.add("hint--dismissed");
 window.addEventListener("pointermove", dismissHint, { once: true });
 window.addEventListener("pointerdown", dismissHint, { once: true });
+
+// CV reveal. field.js drives the canvas transition (parting the sea, morphing
+// RAEM into the corner logo) and emits phase events; the DOM CV overlay is
+// toggled in response so it emerges as the water recedes.
+const body = document.body;
+const cv = document.querySelector(".cv");
+window.addEventListener("field:clearing", () => {
+  body.classList.add("is-clearing");
+  body.classList.remove("is-closing");
+});
+window.addEventListener("field:cv", () => {
+  body.classList.remove("is-clearing");
+  body.classList.add("is-cv");
+  if (cv) cv.removeAttribute("inert");
+});
+window.addEventListener("field:closing", () => {
+  body.classList.remove("is-cv");
+  body.classList.add("is-closing");
+  if (cv) cv.setAttribute("inert", "");
+});
+window.addEventListener("field:field", () => {
+  body.classList.remove("is-clearing", "is-closing", "is-cv");
+  if (cv) cv.setAttribute("inert", "");
+});
+
+// Return to the field: click the corner logo or press Escape.
+const cvLogo = document.querySelector(".cv-logo");
+if (cvLogo) cvLogo.addEventListener("click", () => field.close());
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && body.classList.contains("is-cv")) field.close();
+});
 
 function updateThemeToggleLabel() {
   const nextMode = theme.mode === "dark" ? "light" : "dark";

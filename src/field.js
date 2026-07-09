@@ -4,8 +4,10 @@ import { fieldNoise, smoothstep, clamp, lerp } from "./noise.js";
 
 // The typographic field. Owns the canvas, a monospace grid, three aligned
 // character grids (one per cursor zone), and the per-frame render.
-export function createField(canvas) {
+export function createField(canvas, options = {}) {
   const ctx = canvas.getContext("2d", { alpha: false });
+  const reducedMotion = !!options.reducedMotion;
+  const onNeedsRedraw = options.onNeedsRedraw || (() => {});
 
   let cssW = 0;
   let cssH = 0;
@@ -26,24 +28,73 @@ export function createField(canvas) {
   let seaClearStart = null;
   let seaClearOrigin = { x: 0, y: 0 };
   let seaClearComplete = false;
+  // Phase machine for the CV reveal: field -> clearing -> cv -> closing -> field.
+  let phase = "field";
+  let seaCloseStart = null;
+  let seaFarthest = 0; // fully-cleared radius, reused to flood back in
+  let cvReveal = 0; // eased 0..1: RAEM morphed into the corner logo
+  let logoTarget = null; // {x, baselineY, fontSize} the wordmark shrinks toward
 
   let grids = null;
   const buckets = []; // reused each frame; buckets[i] = [x, y, char, x, y, char, ...]
   const pulseBuckets = [];
 
+  function emit(name) {
+    window.dispatchEvent(new CustomEvent(name));
+  }
+
+  // Part the sea from RAEM and begin morphing it into the corner logo.
+  function startClear() {
+    if (!raemBox) return;
+    seaClearOrigin = {
+      x: raemBox.x + raemBox.w * 0.5,
+      y: raemBox.y + raemBox.h * 0.5,
+    };
+    seaCloseStart = null;
+    emit("field:clearing");
+    if (reducedMotion) {
+      phase = "cv";
+      seaClearComplete = true;
+      cvReveal = 1;
+      emit("field:cv");
+      onNeedsRedraw();
+      return;
+    }
+    phase = "clearing";
+    seaClearStart = performance.now();
+    seaClearComplete = false;
+  }
+
+  // Flood the sea back in and return to the field.
+  function startClose() {
+    if (phase !== "cv") return;
+    emit("field:closing");
+    if (reducedMotion) {
+      resetToField();
+      emit("field:field");
+      onNeedsRedraw();
+      return;
+    }
+    phase = "closing";
+    seaCloseStart = performance.now();
+  }
+
+  function resetToField() {
+    phase = "field";
+    seaClearStart = null;
+    seaCloseStart = null;
+    seaClearComplete = false;
+    cvReveal = 0;
+  }
+
   canvas.addEventListener("pointerdown", (e) => {
-    if (seaClearStart !== null) return;
+    if (phase !== "field") return;
     if (!isInsideRaemBox(e.clientX, e.clientY)) return;
 
     const state = wordmarkState(performance.now());
     if (state.blue < 0.96) return;
 
-    seaClearStart = performance.now();
-    seaClearComplete = false;
-    seaClearOrigin = {
-      x: raemBox.x + raemBox.w * 0.5,
-      y: raemBox.y + raemBox.h * 0.5,
-    };
+    startClear();
   });
 
   function pickFontSize(w) {
@@ -138,6 +189,16 @@ export function createField(canvas) {
       raemX: textX,
       textY,
     };
+
+    // The small top-left slot RAEM shrinks into as the CV takes over.
+    ctx.font = wordmarkFont(config.wordmarkFontFamily, "normal", config.logoFontSize);
+    const logoMetrics = ctx.measureText(config.raemText);
+    const logoAscent = logoMetrics.actualBoundingBoxAscent || config.logoFontSize * 0.74;
+    logoTarget = {
+      x: config.logoMarginX,
+      baselineY: config.logoMarginY + logoAscent,
+      fontSize: config.logoFontSize,
+    };
   }
 
   function isInsideRaemBox(x, y) {
@@ -154,15 +215,26 @@ export function createField(canvas) {
     const dt = lastNow ? Math.min((now - lastNow) / 1000, 0.08) : 1 / 60;
     lastNow = now;
 
-    hoveringRaem = isInsideRaemBox(pointer.rawX, pointer.rawY);
-    canvas.style.cursor = hoveringRaem && wordmarkState(now).blue >= 0.96 && seaClearStart === null ? "pointer" : "";
-    const target = hoveringRaem && seaClearStart === null ? 1 : 0;
+    const inField = phase === "field";
+    hoveringRaem = inField && isInsideRaemBox(pointer.rawX, pointer.rawY);
+    canvas.style.cursor = hoveringRaem && wordmarkState(now).blue >= 0.96 ? "pointer" : "";
+    const target = hoveringRaem ? 1 : 0;
     const speed = target > reveal ? config.raemRevealInSpeed : config.raemRevealOutSpeed;
     reveal += (target - reveal) * (1 - Math.exp(-speed * dt));
 
     const italicSpeed =
       target > italicReveal ? config.wordmarkItalicInSpeed : config.wordmarkItalicOutSpeed;
     italicReveal += (target - italicReveal) * (1 - Math.exp(-italicSpeed * dt));
+
+    // Ease RAEM's morph into (clearing/cv) and back out of (closing/field) the
+    // corner-logo position.
+    const cvTarget = phase === "clearing" || phase === "cv" ? 1 : 0;
+    if (reducedMotion) {
+      cvReveal = cvTarget;
+    } else {
+      const cvSpeed = cvTarget > cvReveal ? config.cvMorphInSpeed : config.cvMorphOutSpeed;
+      cvReveal += (cvTarget - cvReveal) * (1 - Math.exp(-cvSpeed * dt));
+    }
   }
 
   function pulseBoost(x, y, now, active) {
@@ -198,6 +270,9 @@ export function createField(canvas) {
   }
 
   function wordmarkState(now) {
+    // With no animation loop the intro can't play, so present it as finished
+    // and let RAEM be clickable immediately.
+    if (reducedMotion) return { hi: 1, intro: 1, blue: 1 };
     if (!introStart) introStart = now;
 
     const elapsed = now - introStart;
@@ -210,11 +285,12 @@ export function createField(canvas) {
     return { hi, intro, blue };
   }
 
-  function seaClearAmount(x, y, now) {
-    if (seaClearStart === null) return 0;
+  // Fraction a cell is cleared (1 = empty) for a given clearing radius. The same
+  // shape is reused for the forward clear (growing radius) and the reverse flood
+  // (shrinking radius), so the sea parts and re-forms with the same organic edge.
+  function seaClearAmount(x, y, now, radius) {
+    if (radius <= 0) return 0;
 
-    const age = Math.max(0, now - seaClearStart);
-    const radius = (age / 1000) * config.seaClearSpeed;
     const wobble =
       (fieldNoise(
         x * config.seaClearWobbleFreq,
@@ -231,18 +307,50 @@ export function createField(canvas) {
     return 1 - smoothstep(radius - config.seaClearSoftness, radius + config.seaClearSoftness, dist + wobble);
   }
 
-  function updateSeaClear(now) {
-    if (seaClearStart === null || seaClearComplete) return;
-
-    const radius = ((now - seaClearStart) / 1000) * config.seaClearSpeed;
-    const farthest = Math.max(
-      Math.hypot(seaClearOrigin.x, seaClearOrigin.y),
-      Math.hypot(cssW - seaClearOrigin.x, seaClearOrigin.y),
-      Math.hypot(seaClearOrigin.x, cssH - seaClearOrigin.y),
-      Math.hypot(cssW - seaClearOrigin.x, cssH - seaClearOrigin.y)
+  function fullClearRadius() {
+    return (
+      Math.max(
+        Math.hypot(seaClearOrigin.x, seaClearOrigin.y),
+        Math.hypot(cssW - seaClearOrigin.x, seaClearOrigin.y),
+        Math.hypot(seaClearOrigin.x, cssH - seaClearOrigin.y),
+        Math.hypot(cssW - seaClearOrigin.x, cssH - seaClearOrigin.y)
+      ) +
+      config.seaClearSoftness +
+      config.seaClearWobble
     );
+  }
 
-    seaClearComplete = radius > farthest + config.seaClearSoftness + config.seaClearWobble;
+  // The clearing radius for the current phase: grows while clearing, shrinks
+  // back to zero while closing, and is zero in the plain field phase.
+  function currentClearRadius(now) {
+    if (phase === "clearing") return ((now - seaClearStart) / 1000) * config.seaClearSpeed;
+    if (phase === "closing") {
+      const shrink = ((now - seaCloseStart) / 1000) * config.seaCloseSpeed;
+      return Math.max(0, seaFarthest - shrink);
+    }
+    return 0;
+  }
+
+  function updateSeaClear(now) {
+    if (phase !== "clearing") return;
+
+    seaFarthest = fullClearRadius();
+    const radius = ((now - seaClearStart) / 1000) * config.seaClearSpeed;
+    if (radius > seaFarthest) {
+      phase = "cv";
+      seaClearComplete = true;
+      emit("field:cv");
+    }
+  }
+
+  function updateSeaClose(now) {
+    if (phase !== "closing") return;
+
+    const shrink = ((now - seaCloseStart) / 1000) * config.seaCloseSpeed;
+    if (shrink >= seaFarthest) {
+      resetToField();
+      emit("field:field");
+    }
   }
 
   function roundedRectSdf(x, y, box, radius) {
@@ -256,25 +364,31 @@ export function createField(canvas) {
   }
 
   function drawWordmark(now, palette) {
-    if (!raemBox || !wordmark) return;
+    if (!raemBox || !wordmark || !logoTarget) return;
 
     const state = wordmarkState(now);
     const leadAlpha = config.raemAlphaReveal;
     const raemAlpha = config.wordmarkRaemAlphaReveal;
     const italicMix = smoothstep(0, 1, italicReveal);
     const romanMix = 1 - italicMix;
+    const cvMix = smoothstep(0, 1, cvReveal);
     ctx.textBaseline = "alphabetic";
     applyWordmarkShadow(palette);
 
+    // HI and I'M belong to the intro only, so they fade out as the CV takes over.
     ctx.font = wordmarkFont(config.wordmarkFontFamily);
     ctx.fillStyle = palette.ink;
-    ctx.globalAlpha = leadAlpha * state.hi;
+    ctx.globalAlpha = leadAlpha * state.hi * (1 - cvMix);
     ctx.fillText(config.wordmarkLeadText, wordmark.hiX, wordmark.hiY);
-    ctx.globalAlpha = leadAlpha * state.intro;
+    ctx.globalAlpha = leadAlpha * state.intro * (1 - cvMix);
     ctx.fillText(config.wordmarkIntroText, wordmark.introX, wordmark.textY);
 
+    // RAEM morphs from the big bottom-right wordmark toward the corner logo.
+    const raemSize = lerp(raemFontSize * config.wordmarkRaemScale, logoTarget.fontSize, cvMix);
+    const raemX = lerp(wordmark.raemX, logoTarget.x, cvMix);
+    const raemBaseline = lerp(wordmark.textY, logoTarget.baselineY, cvMix);
     const revealMix = smoothstep(0, 1, reveal);
-    applyRaemShadow(palette, revealMix);
+    applyRaemShadow(palette, Math.max(revealMix, cvMix));
     drawRaemStyle("normal", romanMix, revealMix);
     drawRaemStyle("italic", italicMix, revealMix);
     ctx.globalAlpha = 1;
@@ -283,20 +397,26 @@ export function createField(canvas) {
     function drawRaemStyle(style, alphaMix, revealMix) {
       if (alphaMix <= 0.001) return;
 
-      ctx.font = wordmarkFont(config.wordmarkFontFamily, style, raemFontSize * config.wordmarkRaemScale);
+      ctx.font = wordmarkFont(config.wordmarkFontFamily, style, raemSize);
       ctx.fillStyle = palette.ink;
       ctx.globalAlpha = raemAlpha * state.intro * (1 - state.blue) * alphaMix;
-      ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+      ctx.fillText(config.raemText, raemX, raemBaseline);
       ctx.fillStyle = palette.raemPulseInk;
       ctx.globalAlpha = raemAlpha * state.intro * state.blue * alphaMix;
-      ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+      ctx.fillText(config.raemText, raemX, raemBaseline);
 
       // On hover, deepen RAEM toward a high-contrast ink so the revealed word
       // reads as fully present in the cleared rounded rect around it.
       if (revealMix > 0.001) {
         ctx.fillStyle = palette.raemRevealInk;
         ctx.globalAlpha = raemAlpha * state.intro * alphaMix * revealMix;
-        ctx.fillText(config.raemText, wordmark.raemX, wordmark.textY);
+        ctx.fillText(config.raemText, raemX, raemBaseline);
+      }
+      // As the CV takes over, settle RAEM to solid ink as the corner logo.
+      if (cvMix > 0.001) {
+        ctx.fillStyle = palette.ink;
+        ctx.globalAlpha = raemAlpha * state.intro * alphaMix * cvMix;
+        ctx.fillText(config.raemText, raemX, raemBaseline);
       }
     }
   }
@@ -364,11 +484,17 @@ export function createField(canvas) {
 
     updateReveal(now, pointer);
     updateSeaClear(now);
-    const pulseActive = seaClearStart === null && wordmarkState(now).blue >= 0.96;
-    if (seaClearComplete) {
+    updateSeaClose(now);
+    const pulseActive = phase === "field" && wordmarkState(now).blue >= 0.96;
+
+    // In the CV phase the sea is fully parted: paint just the background and the
+    // shrunken RAEM corner logo, and let the DOM CV overlay carry the content.
+    if (phase === "cv") {
       drawWordmark(now, palette);
       return;
     }
+
+    const clearRadius = currentClearRadius(now);
 
     ctx.font = `${fontSize}px ${config.fontFamily}`;
     ctx.textBaseline = "top";
@@ -506,7 +632,7 @@ export function createField(canvas) {
         const voidSdf = lerp(cursorSdf, raemSdf, smoothstep(0, 1, reveal));
         if (voidSdf < 0) continue;
 
-        const clear = seaClearAmount(cxc, cyc, now);
+        const clear = seaClearAmount(cxc, cyc, now, clearRadius);
         if (clear >= 0.985) continue;
 
         const n = fieldNoise(c * config.noiseSpaceFreq, r * config.noiseSpaceFreq, time);
@@ -560,5 +686,5 @@ export function createField(canvas) {
     drawWordmark(now, palette);
   }
 
-  return { rebuild, render };
+  return { rebuild, render, close: startClose };
 }

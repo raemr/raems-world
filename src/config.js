@@ -134,6 +134,18 @@ export const config = {
   raemPulseWobbleFreq: 0.007,
   // Temporal speed for pulse wobble.
   raemPulseWobbleSpeed: 0.00022,
+  // CV reveal. Clicking RAEM parts the sea and reveals the CV; the wordmark
+  // shrinks into a small top-left logo, and the whole thing reverses on close.
+  // How fast RAEM morphs into / back out of the corner logo.
+  cvMorphInSpeed: 3.0,
+  cvMorphOutSpeed: 3.8,
+  // Corner-logo geometry (the shrunken RAEM that anchors the CV header).
+  logoMarginX: 36,
+  logoMarginY: 30,
+  logoFontSize: 27,
+  // Reverse "flood" speed when returning to the field (snappier than the clear).
+  seaCloseSpeed: 1050, // px/s
+
   // Expansion speed for the click-to-clear sea transition.
   seaClearSpeed: 720, // px/s
   // Feather width around the clearing edge.

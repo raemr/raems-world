@@ -152,11 +152,353 @@ body {
   body,
   .theme-toggle,
   .theme-toggle__icon,
-  .theme-toggle__icon::before {
+  .theme-toggle__icon::before,
+  .cv {
     transition: none;
   }
 
   .hint {
     animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* CV layer                                                            */
+/* Revealed when RAEM is clicked and the sea parts. It is a full-bleed */
+/* scroll container that sits above the (now blank cream) canvas and   */
+/* reuses the theme vars, so it works in light and dark for free.      */
+/* ------------------------------------------------------------------ */
+.cv {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition:
+    opacity 900ms ease,
+    transform 900ms ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Emerge as the water recedes, then become interactive once fully parted. */
+.is-clearing .cv,
+.is-cv .cv {
+  opacity: 1;
+  transform: none;
+}
+
+.is-cv .cv {
+  pointer-events: auto;
+}
+
+.is-closing .cv {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+}
+
+/* Sticky nav. Solid background so the CV scrolls cleanly beneath it and the
+   DOM logo takes over from the canvas RAEM that morphed into this corner. */
+.cv-nav {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 92px 20px 32px;
+  background: var(--bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+.cv-logo {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 700;
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.cv-logo:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.cv-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cv-links a {
+  color: var(--ink);
+  text-decoration: none;
+  opacity: 0.62;
+  transition: opacity 160ms ease;
+}
+
+.cv-links a:hover,
+.cv-links a:focus-visible {
+  opacity: 1;
+}
+
+.cv-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 32px 120px;
+}
+
+/* Hero */
+.cv-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.cv-name {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(30px, 6vw, 46px);
+  letter-spacing: 0.01em;
+}
+
+.cv-badge {
+  padding: 4px 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.cv-intro {
+  margin: 26px 0 0;
+  max-width: 60ch;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.cv-intro p {
+  margin: 0 0 10px;
+}
+
+.cv-contact {
+  margin: 24px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  opacity: 0.55;
+}
+
+/* Sections */
+.cv-section {
+  margin-top: 64px;
+}
+
+.cv-section-title {
+  margin: 0 0 24px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.entry {
+  margin: 0 0 30px;
+}
+
+.entry:last-child {
+  margin-bottom: 0;
+}
+
+.entry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.entry-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.entry-org {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.entry-head-meta {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.entry-place {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.entry-date {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.55;
+}
+
+.entry-points {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry-points li {
+  position: relative;
+  margin: 0 0 10px;
+  padding-left: 20px;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.entry-points li::before {
+  content: "-";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  opacity: 0.55;
+}
+
+/* Skills */
+.skills {
+  margin: 0;
+}
+
+.skill-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+  padding: 14px 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.skill-row:last-child {
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.skill-row dt {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.skill-row dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 0.78;
+}
+
+/* Honors */
+.honors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.honors li {
+  position: relative;
+  margin: 0 0 12px;
+  padding-left: 20px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.honors li::before {
+  content: "*";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  opacity: 0.55;
+}
+
+.honors strong {
+  font-weight: 700;
+}
+
+/* Footer */
+.cv-footer {
+  margin-top: 80px;
+  padding-top: 28px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.cv-sign {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 30px;
+}
+
+.cv-handle {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  opacity: 0.5;
+}
+
+@media (max-width: 560px) {
+  /* Logo + four links don't fit one row at phone widths, so stack them: the
+     logo keeps the top-left corner (where RAEM morphs to) and the links flow
+     onto their own row, clear of the floating theme toggle. */
+  .cv-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 24px 14px;
+  }
+
+  .cv-links {
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 11px;
+  }
+
+  .cv-inner {
+    padding: 48px 24px 96px;
+  }
+
+  .entry-head {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .entry-head-meta {
+    text-align: left;
+  }
+
+  .skill-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }

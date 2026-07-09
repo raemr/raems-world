@@ -32,6 +32,237 @@
       <span class="theme-toggle__icon" aria-hidden="true"></span>
     </button>
 
+    <!-- CV layer. Hidden until RAEM is clicked and the sea parts; revealed by
+         body classes driven from main.js. Kept inert so it is non-interactive
+         and out of the tab order while the field is showing. -->
+    <div class="cv" inert>
+      <nav class="cv-nav">
+        <button class="cv-logo" type="button" aria-label="Back to the field">
+          RAEM
+        </button>
+        <ul class="cv-links">
+          <li><a href="mailto:raemrahman@gmail.com">Email</a></li>
+          <li>
+            <a href="https://github.com/raemr" target="_blank" rel="noopener">
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a
+              class="cv-link-linkedin"
+              href="https://www.linkedin.com/in/raemr"
+              target="_blank"
+              rel="noopener"
+              >LinkedIn</a
+            >
+          </li>
+          <li>
+            <a href="/raem-rahman-resume.pdf" target="_blank" rel="noopener">
+              Resume
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="cv-inner">
+        <header class="cv-hero">
+          <div class="cv-name-row">
+            <h1 class="cv-name">Raem Rahman</h1>
+            <span class="cv-badge">ai / ml engineer</span>
+          </div>
+          <div class="cv-intro">
+            <p>
+              I'm a CS + Math student at Harvey Mudd building AI/ML systems -
+              risk models, RAG search, and agentic tooling.
+            </p>
+            <p>I like turning noisy, real-world data into things that ship.</p>
+            <p>Currently exploring ML engineering and applied research.</p>
+          </div>
+          <p class="cv-contact">
+            Claremont, CA &nbsp;·&nbsp; (909) 360-6950 &nbsp;·&nbsp;
+            raemrahman@gmail.com &nbsp;·&nbsp; github.com/raemr
+          </p>
+        </header>
+
+        <section class="cv-section">
+          <h2 class="cv-section-title">education_</h2>
+          <article class="entry">
+            <div class="entry-head">
+              <div class="entry-head-main">
+                <h3 class="entry-title">Harvey Mudd College</h3>
+                <p class="entry-org">
+                  B.S. in Computer Science and Mathematics · GPA (major): 3.5
+                </p>
+              </div>
+              <div class="entry-head-meta">
+                <p class="entry-place">Claremont, CA</p>
+                <p class="entry-date">Class of 2029 (Expected)</p>
+              </div>
+            </div>
+          </article>
+          <article class="entry">
+            <div class="entry-head">
+              <div class="entry-head-main">
+                <h3 class="entry-title">Aitchison College</h3>
+                <p class="entry-org">High School Diploma · GPA: 3.89</p>
+              </div>
+              <div class="entry-head-meta">
+                <p class="entry-place">Lahore, Pakistan</p>
+                <p class="entry-date">Class of 2025</p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="cv-section-title">experience_</h2>
+          <article class="entry">
+            <div class="entry-head">
+              <div class="entry-head-main">
+                <h3 class="entry-title">AI / Machine Learning Engineer Intern</h3>
+                <p class="entry-org">Mindigital</p>
+              </div>
+              <div class="entry-head-meta">
+                <p class="entry-place">Beijing, China (On-site)</p>
+                <p class="entry-date">Summer 2026</p>
+              </div>
+            </div>
+            <ul class="entry-points">
+              <li>
+                Engineered a novel risk feature for a loan-default prediction
+                model on a heavily biased dataset, lifting backtest PR-AUC from
+                0.78 to 0.83 (+0.05, a ~6% relative gain) using a
+                gradient-boosted tree model (tested XGBoost, LightGBM, CatBoost),
+                increasing default prediction accuracy and profitability.
+              </li>
+              <li>
+                Built a Docker-ized hybrid semantic + keyword search knowledge
+                base application (Obsidian, pgvector) with agentic automation
+                (Ollama, Hermes) for data logging and report generation, reducing
+                manual reporting overhead and improving internal information
+                retrieval - deployed on-premise for data-privacy compliance.
+              </li>
+            </ul>
+          </article>
+          <article class="entry">
+            <div class="entry-head">
+              <div class="entry-head-main">
+                <h3 class="entry-title">Research Assistant</h3>
+                <p class="entry-org">International Growth Centre (IGC)</p>
+              </div>
+              <div class="entry-head-meta">
+                <p class="entry-place">Lahore, Pakistan (Remote)</p>
+                <p class="entry-date">Jul 2024 - Sep 2024</p>
+              </div>
+            </div>
+            <ul class="entry-points">
+              <li>
+                Built Python web-scraping, OCR and generative-AI pipelines to
+                clean, gather, correlate, and analyze noisy large-scale
+                power-sector data.
+              </li>
+              <li>
+                Contributed data analysis to the research paper "The Economic
+                Costs of Lopsided Contracts: Evidence from Pakistan's Power
+                Sector," quantifying financial losses from poorly conceived
+                purchase power agreement (PPA) contracts.
+              </li>
+            </ul>
+          </article>
+          <article class="entry">
+            <div class="entry-head">
+              <div class="entry-head-main">
+                <h3 class="entry-title">
+                  Artificial Intelligence &amp; Software Intern
+                </h3>
+                <p class="entry-org">
+                  Office of State Senator Saud Anwar (D - Senate District 3)
+                </p>
+              </div>
+              <div class="entry-head-meta">
+                <p class="entry-place">Hartford, CT (Remote)</p>
+                <p class="entry-date">Jan 2024 - May 2024</p>
+              </div>
+            </div>
+            <ul class="entry-points">
+              <li>
+                Developed an automated pipeline generating daily batches of
+                customized condolence letters to next of kin of constituents in
+                Senate District 3.
+              </li>
+              <li>
+                Built obituary-search and letter-generation programs using
+                Python, OpenAI APIs, and Scrapy for web scraping.
+              </li>
+            </ul>
+          </article>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="cv-section-title">skills_</h2>
+          <dl class="skills">
+            <div class="skill-row">
+              <dt>Languages &amp; Tools</dt>
+              <dd>Python, SQL, Git</dd>
+            </div>
+            <div class="skill-row">
+              <dt>Machine Learning &amp; AI</dt>
+              <dd>
+                scikit-learn, PyTorch, NumPy, pandas, LangChain, RAG (semantic +
+                keyword retrieval), OpenAI &amp; Anthropic APIs, ReportLab, PyPDF
+              </dd>
+            </div>
+            <div class="skill-row">
+              <dt>Data &amp; Infrastructure</dt>
+              <dd>
+                Docker, PostgreSQL / pgvector, Parquet, Ollama, Hermes, MySQL,
+                Obsidian, BeautifulSoup, Scrapy
+              </dd>
+            </div>
+            <div class="skill-row">
+              <dt>Spoken Languages</dt>
+              <dd>
+                English (fluent), Hindi / Urdu (fluent), Chinese (HSK Level 3
+                Certified)
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="cv-section-title">honors_</h2>
+          <ul class="honors">
+            <li>
+              <strong>Top 10%, Calculus</strong> - Stanford Math Tournament.
+            </li>
+            <li>
+              <strong>Winner</strong> - Pakistan Mathematics Modeling
+              Competition; selected for the Pakistan National Mathematics
+              Modeling Team (2024).
+            </li>
+            <li>
+              <strong>Top 40 nationally</strong> - invited to the Pakistan
+              National Mathematics Team (IMO) Selection Camp, reserved for the
+              top 40 ranked mathematics students in the country.
+            </li>
+            <li>
+              <strong>1st globally</strong> - Caribou Computer Science Coding
+              Competition (2024).
+            </li>
+            <li>
+              <strong>1st in Pakistan</strong> - South East Asian Math Olympiad
+              (SEAMO); invited to the global finals in Singapore (2024).
+            </li>
+          </ul>
+        </section>
+
+        <footer class="cv-footer">
+          <p class="cv-sign">Raem</p>
+          <p class="cv-handle">github.com/raemr</p>
+        </footer>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
