@@ -412,9 +412,10 @@ export function createField(canvas, options = {}) {
         ctx.globalAlpha = raemAlpha * state.intro * alphaMix * revealMix;
         ctx.fillText(config.raemText, raemX, raemBaseline);
       }
-      // As the CV takes over, settle RAEM to solid ink as the corner logo.
+      // As the CV takes over, settle RAEM to the solid teal accent as the
+      // corner logo, matching the DOM logo it hands off to.
       if (cvMix > 0.001) {
-        ctx.fillStyle = palette.ink;
+        ctx.fillStyle = palette.raemPulseInk;
         ctx.globalAlpha = raemAlpha * state.intro * alphaMix * cvMix;
         ctx.fillText(config.raemText, raemX, raemBaseline);
       }

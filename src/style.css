@@ -1,10 +1,11 @@
 :root {
-  --bg: #eef1e8;
-  --ink: #222820;
-  --toggle-bg: rgba(238, 241, 232, 0.62);
-  --toggle-border: rgba(34, 40, 32, 0.22);
-  --toggle-ink: #222820;
-  --toggle-shadow: rgba(47, 64, 54, 0.16);
+  --bg: #fcdab7;
+  --ink: #2b2a27;
+  --accent: #1e5f74;
+  --toggle-bg: rgba(252, 218, 183, 0.62);
+  --toggle-border: rgba(43, 42, 39, 0.24);
+  --toggle-ink: #2b2a27;
+  --toggle-shadow: rgba(43, 42, 39, 0.16);
   color-scheme: light;
 }
 
@@ -164,9 +165,10 @@ body {
 
 /* ------------------------------------------------------------------ */
 /* CV layer                                                            */
-/* Revealed when RAEM is clicked and the sea parts. It is a full-bleed */
-/* scroll container that sits above the (now blank cream) canvas and   */
-/* reuses the theme vars, so it works in light and dark for free.      */
+/* Revealed once RAEM is clicked and the sea has fully parted. It is a */
+/* full-bleed scroll container with its own solid themed background so */
+/* the CV is a clean page - never the live field showing through - and */
+/* it reuses the theme vars, so it works in light and dark for free.   */
 /* ------------------------------------------------------------------ */
 .cv {
   position: fixed;
@@ -174,24 +176,22 @@ body {
   z-index: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  background: var(--bg);
   color: var(--ink);
   opacity: 0;
   transform: translateY(16px);
   pointer-events: none;
   transition:
-    opacity 900ms ease,
-    transform 900ms ease;
+    opacity 700ms ease,
+    transform 700ms ease;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Emerge as the water recedes, then become interactive once fully parted. */
-.is-clearing .cv,
+/* Surface only after the field has fully cleared, so the sea-parting and the
+   canvas wordmark never bleed through the CV content. */
 .is-cv .cv {
   opacity: 1;
   transform: none;
-}
-
-.is-cv .cv {
   pointer-events: auto;
 }
 
@@ -221,7 +221,7 @@ body {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ink);
+  color: var(--accent);
   font-family: "Fraunces", Georgia, serif;
   font-weight: 700;
   font-size: 27px;

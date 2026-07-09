@@ -18,18 +18,20 @@ export const config = {
   // Canvas and CSS colors by mode. The theme controller interpolates these.
   palettes: {
     light: {
-      bg: "#eef1e8",
-      ink: "#222820",
-      raemPulseInk: "#426f82",
-      // Deep, high-contrast ink RAEM eases into while hovered, so the revealed
-      // word reads as fully present instead of a faint tint under the sea.
-      raemRevealInk: "#173a45",
-      wordmarkShadowColor: "rgba(255, 255, 255, 0.82)",
-      wordmarkRaemShadowColor: "rgba(255, 255, 255, 0.94)",
-      toggleBg: "rgba(238, 241, 232, 0.62)",
-      toggleBorder: "rgba(34, 40, 32, 0.22)",
-      toggleInk: "#222820",
-      toggleShadow: "rgba(47, 64, 54, 0.16)",
+      // Warm peach ground with a warm-dark ink for readable body text; teal is
+      // reserved for the RAEM accent only.
+      bg: "#fcdab7",
+      ink: "#2b2a27",
+      raemPulseInk: "#1e5f74",
+      // Deep teal RAEM eases into while hovered, so the revealed word reads as
+      // fully present instead of a faint tint under the sea.
+      raemRevealInk: "#123845",
+      wordmarkShadowColor: "rgba(252, 218, 183, 0.85)",
+      wordmarkRaemShadowColor: "rgba(252, 218, 183, 0.95)",
+      toggleBg: "rgba(252, 218, 183, 0.62)",
+      toggleBorder: "rgba(43, 42, 39, 0.24)",
+      toggleInk: "#2b2a27",
+      toggleShadow: "rgba(43, 42, 39, 0.16)",
     },
     dark: {
       bg: "#101615",
@@ -109,15 +111,15 @@ export const config = {
   // Pause after HI appears before I'M RAEM starts.
   wordmarkHiHoldMs: 620,
   // Fade-in duration for I'M RAEM.
-  wordmarkIntroFadeMs: 900,
+  wordmarkIntroFadeMs: 800,
   // Delay before RAEM turns blue.
-  wordmarkBlueDelayMs: 900,
+  wordmarkBlueDelayMs: 800,
   // Duration of RAEM's blue transition.
   wordmarkBlueFadeMs: 760,
   // Speed of the repeating RAEM pulse wavefront.
   raemPulseSpeed: 180, // px/s
   // Time between emitted pulse wavefronts.
-  raemPulsePeriod: 4000, // ms between emitted wavefronts
+  raemPulsePeriod: 2850, // ms between emitted wavefronts
   // Thickness of the pulse wavefront.
   raemPulseWidth: 84, // thickness of the brightened wavefront
   // Maximum opacity contribution from the moving pulse.
