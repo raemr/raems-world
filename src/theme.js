@@ -106,6 +106,9 @@ export function createThemeController() {
     root.dataset.theme = mode;
     root.style.setProperty("--bg", palette.bg);
     root.style.setProperty("--ink", palette.ink);
+    // The RAEM brand accent (teal in light), shared by the field wordmark and
+    // the CV logo so RAEM reads as the same mark across the reveal.
+    root.style.setProperty("--accent", palette.raemPulseInk);
     root.style.setProperty("--toggle-bg", palette.toggleBg);
     root.style.setProperty("--toggle-border", palette.toggleBorder);
     root.style.setProperty("--toggle-ink", palette.toggleInk);
