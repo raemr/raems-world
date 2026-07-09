@@ -101,7 +101,11 @@ export function createThemeController() {
   let current = mixPalette(from, to, 1);
   let progress = 1;
 
-  function applyCss(palette) {
+  // The DOM's theme is applied straight to the CSS variables the instant the
+  // mode changes - never driven by the render loop - so it can't desync from
+  // data-theme or stall when frames are starved. A CSS transition (see
+  // style.css) does the smooth fade on the compositor, independent of rAF.
+  function applyCssVars(palette) {
     const root = document.documentElement;
     root.dataset.theme = mode;
     root.style.setProperty("--bg", palette.bg);
@@ -120,19 +124,21 @@ export function createThemeController() {
 
     mode = nextMode;
     storeMode(mode);
+    // DOM colours jump to their final values now; CSS eases them.
+    applyCssVars(config.palettes[mode]);
+    // The canvas palette still interpolates over the loop so the field colours
+    // cross-fade; it drives only what is drawn on the canvas.
     from = parsePalette(current);
     to = parsedPalettes[mode];
     startedAt = performance.now();
     progress = options.instant || reducedMotion ? 1 : 0;
     current = mixPalette(from, to, progress);
-    applyCss(current);
   }
 
   function update(now) {
     if (progress < 1) {
       progress = clamp((now - startedAt) / config.themeTransitionMs, 0, 1);
       current = mixPalette(from, to, ease(progress));
-      applyCss(current);
     }
     return current;
   }
@@ -141,7 +147,7 @@ export function createThemeController() {
     setMode(mode === "dark" ? "light" : "dark");
   }
 
-  applyCss(current);
+  applyCssVars(config.palettes[mode]);
 
   return {
     get mode() {

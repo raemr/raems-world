@@ -26,6 +26,9 @@ body {
   color: var(--ink);
   font-family: "IBM Plex Mono", "SF Mono", SFMono-Regular, Menlo, Consolas,
     monospace;
+  transition:
+    background-color 720ms ease,
+    color 720ms ease;
 }
 
 #field {
@@ -88,7 +91,11 @@ body {
   cursor: pointer;
   transition:
     transform 180ms ease,
-    backdrop-filter 180ms ease;
+    backdrop-filter 180ms ease,
+    background-color 720ms ease,
+    border-color 720ms ease,
+    color 720ms ease,
+    box-shadow 720ms ease;
 }
 
 .theme-toggle:hover {
@@ -154,7 +161,11 @@ body {
   .theme-toggle,
   .theme-toggle__icon,
   .theme-toggle__icon::before,
-  .cv {
+  .cv,
+  .cv-nav,
+  .cv-badge,
+  .cv-logo,
+  .cv-links a {
     transition: none;
   }
 
@@ -183,7 +194,9 @@ body {
   pointer-events: none;
   transition:
     opacity 700ms ease,
-    transform 700ms ease;
+    transform 700ms ease,
+    background-color 720ms ease,
+    color 720ms ease;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -214,6 +227,9 @@ body {
   padding: 20px 92px 20px 32px;
   background: var(--bg);
   border-bottom: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  transition:
+    background-color 720ms ease,
+    border-color 720ms ease;
 }
 
 .cv-logo {
@@ -228,6 +244,7 @@ body {
   line-height: 1;
   letter-spacing: 0.01em;
   cursor: pointer;
+  transition: color 720ms ease;
 }
 
 .cv-logo:focus-visible {
@@ -251,7 +268,9 @@ body {
   color: var(--ink);
   text-decoration: none;
   opacity: 0.62;
-  transition: opacity 160ms ease;
+  transition:
+    opacity 160ms ease,
+    color 720ms ease;
 }
 
 .cv-links a:hover,
@@ -289,6 +308,9 @@ body {
   letter-spacing: 0.1em;
   text-transform: lowercase;
   white-space: nowrap;
+  transition:
+    background-color 720ms ease,
+    color 720ms ease;
 }
 
 .cv-intro {
