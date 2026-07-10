@@ -11,6 +11,15 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  /* Dark palette mirrored from config.palettes.dark so the very first paint is
+     correct (the theme.js runtime later re-applies these same values inline). */
+  --bg: #101615;
+  --ink: #e9ecdf;
+  --accent: #90bbc8;
+  --toggle-bg: rgba(16, 22, 21, 0.68);
+  --toggle-border: rgba(233, 236, 223, 0.24);
+  --toggle-ink: #e9ecdf;
+  --toggle-shadow: rgba(0, 0, 0, 0.38);
 }
 
 * {
@@ -38,6 +47,10 @@ body {
   width: 100vw;
   height: 100vh;
   z-index: 0;
+  /* Themed backing so the canvas area matches the theme before the 2D context
+     initialises (an uninitialised canvas is transparent and would show the
+     page background through it). */
+  background: var(--bg);
 }
 
 /* Foreground content sits above the canvas but never eats pointer events,

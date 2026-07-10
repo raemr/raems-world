@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>field</title>
     <meta name="description" content="A generative typographic field." />
+    <!-- Resolve the theme before first paint so the page never flashes the
+         light palette while the module JS is still loading. Mirrors the
+         stored/system logic in src/theme.js. -->
+    <script>
+      (function () {
+        try {
+          var m = localStorage.getItem("raem-theme");
+          if (m !== "dark" && m !== "light") {
+            m = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+          document.documentElement.dataset.theme = m;
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
