@@ -9,6 +9,17 @@ export function createField(canvas, options = {}) {
   const reducedMotion = !!options.reducedMotion;
   const onNeedsRedraw = options.onNeedsRedraw || (() => {});
 
+  // An opaque (alpha:false) canvas starts out black. On light mode that reads as
+  // a dark flash while fonts load and the first frame is prepared, so paint the
+  // themed background straight away - render() takes over from the first frame.
+  const initialBg = getComputedStyle(document.documentElement)
+    .getPropertyValue("--bg")
+    .trim();
+  if (initialBg) {
+    ctx.fillStyle = initialBg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
   let cssW = 0;
   let cssH = 0;
   let dpr = 1;
