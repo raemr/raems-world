@@ -106,7 +106,10 @@ async function start() {
       field.render(now, pointer, palette);
       requestAnimationFrame(loop);
     };
-    requestAnimationFrame(loop);
+    // Paint the first frame synchronously so the field appears immediately after
+    // rebuild rather than waiting for the first rAF (avoids a brief blank/dark
+    // gap right after load); the loop then sustains itself.
+    loop(performance.now());
   }
 }
 
